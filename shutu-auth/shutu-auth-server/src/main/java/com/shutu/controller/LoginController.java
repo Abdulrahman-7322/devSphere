@@ -3,22 +3,22 @@ package com.shutu.controller;
 import com.shutu.commons.security.cache.TokenStoreCache;
 import com.shutu.commons.security.user.UserDetail;
 import com.shutu.commons.security.utils.TokenUtils;
+import com.shutu.commons.tools.exception.CommonException;
 import com.shutu.commons.tools.exception.ErrorCode;
 import com.shutu.commons.tools.redis.RedisKeys;
 import com.shutu.commons.tools.redis.RedisUtils;
-import com.shutu.commons.tools.utils.CheckCodeUtil;
 import com.shutu.commons.tools.utils.Result;
 import com.shutu.commons.tools.validator.AssertUtils;
-import com.shutu.domain.dto.LoginDTO;
-import com.shutu.domain.dto.UserTokenDTO;
+import com.shutu.model.dto.LoginDTO;
+import com.shutu.model.dto.UserTokenDTO;
 import com.shutu.service.CaptchaService;
 import com.shutu.service.SysUserTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,48 +26,47 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 
-
 /**
  * 用户登录
  */
 
 @RestController
+@AllArgsConstructor
 @Tag(name = "用户登录")
-@RequestMapping("/auth")
+@RequestMapping
 public class LoginController {
-    @Autowired
-    private CaptchaService captchaService;
-    @Autowired
+
     private RedisUtils redisUtils;
-    @Autowired
     private TokenStoreCache tokenStoreCache;
-    @Autowired
     private AuthenticationManager authenticationManager;
-    @Autowired
     private SysUserTokenService sysUserTokenService;
+    private CaptchaService captchaService;
 
-
-    @GetMapping("/captcha")
+    @GetMapping("captcha")
     @Operation(summary = "验证码")
     @Parameter(name = "uuid", required = true)
-    public String captcha(HttpServletResponse response, String uuid) throws IOException {
+    public void captcha(HttpServletResponse response, String uuid) throws IOException {
         //uuid不能为空
         AssertUtils.isBlank(uuid, ErrorCode.IDENTIFIER_NOT_NULL);
-        // 1.生成验证码
-        ServletOutputStream os = response.getOutputStream();
-        String verifyCode = CheckCodeUtil.outputVerifyImage(100, 50, os, 4);
-        setCache(uuid, verifyCode);
-        return verifyCode;
+
+        //生成验证码
+        captchaService.create(response, uuid);
     }
 
     @ResponseBody
     @PostMapping("/login")
     @Operation(summary = "账号密码登录")
     public Result<UserTokenDTO> login(@RequestBody LoginDTO login) throws Exception {
-        // 验证码效验
+        //检测验证码是否正确
         boolean flag = captchaService.validate(login.getUuid(), login.getCaptcha());
         if (!flag) {
-            throw new Exception("验证码错误");
+            throw new CommonException("验证码错误");
+        }
+
+        //检测用户名是否注册
+        Boolean isSave = sysUserTokenService.isSave(login.getUsername());
+        if (!isSave){
+            throw new CommonException("当前用户名暂未注册！");
         }
 
         Authentication authentication;
@@ -76,7 +75,7 @@ public class LoginController {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()));
         } catch (Exception e) {
-            throw new Exception("用户名或密码错误");
+            throw new CommonException("用户名或密码错误");
         }
 
         // 认证成功拿到用户信息

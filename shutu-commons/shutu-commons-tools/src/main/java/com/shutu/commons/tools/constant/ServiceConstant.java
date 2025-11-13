@@ -10,9 +10,7 @@ package com.shutu.commons.tools.constant;
 
 /**
  * 微服务名称常量
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+ 
  */
 public interface ServiceConstant {
     /**
@@ -23,5 +21,15 @@ public interface ServiceConstant {
      * 授权服务
      */
     String SHUTU_AUTH_SERVER = "shutu-auth-server";
+
+    /**
+     * OSS服务
+     */
+    String SHUTU_OSS_SERVER = "shutu-oss-server";
+
+    /**
+     * 聊天服务
+     */
+    String DEVSPHERE_CHAT_SERVER = "devSphere-chat-server";
 
 }

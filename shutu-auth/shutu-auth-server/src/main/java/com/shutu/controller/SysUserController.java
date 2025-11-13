@@ -11,9 +11,9 @@ import com.shutu.commons.tools.validator.ValidatorUtils;
 import com.shutu.commons.tools.validator.group.AddGroup;
 import com.shutu.commons.tools.validator.group.DefaultGroup;
 import com.shutu.commons.tools.validator.group.UpdateGroup;
-import com.shutu.domain.dto.PasswordDTO;
-import com.shutu.domain.dto.SysUserDTO;
-import com.shutu.domain.entity.SysUserEntity;
+import com.shutu.model.dto.PasswordDTO;
+import com.shutu.model.dto.SysUserDTO;
+import com.shutu.model.entity.SysUserEntity;
 import com.shutu.service.SysRoleUserService;
 import com.shutu.service.SysUserDetailService;
 import com.shutu.service.SysUserPostService;
@@ -31,9 +31,7 @@ import java.util.*;
 
 /**
  * 用户管理
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+ 
  */
 @RestController
 @RequestMapping("user")
@@ -90,10 +88,10 @@ public class SysUserController {
         return new Result<SysUserDTO>().ok(data);
     }
 
-    @PostMapping
+    @PostMapping("/save")
     @Operation(summary = "保存")
    // @LogOperation("Save User")
-    @PreAuthorize("hasAuthority('sys:user:save')")
+//    @PreAuthorize("hasAuthority('sys:user:save')")
     public Result save(@RequestBody SysUserDTO dto) throws Exception {
         //效验数据
         ValidatorUtils.validateEntity(dto, AddGroup.class, DefaultGroup.class);
@@ -169,6 +167,16 @@ public class SysUserController {
     }
 
     /**
+     * 根据用户名，获取用户信息
+     */
+    @PostMapping("getByUsername")
+    public Result<UserDetail> getByUsername(String username) {
+        UserDetail userDetail = sysUserDetailService.getUserDetailByUsername(username);
+
+        return new Result<UserDetail>().ok(userDetail);
+    }
+
+    /**
      * 根据用户ID,查询用户姓名列表
      */
     @PostMapping("getRealNameList")
@@ -226,20 +234,6 @@ public class SysUserController {
         Long leaderId = sysUserService.getLeaderIdListByUserId(userId);
 
         return new Result<Long>().ok(leaderId);
-    }
-
-    /**
-     * 根据用户名添加好友
-     */
-    @PostMapping("/addFriend")
-    public Result<Boolean> addFriend(@RequestParam String userName){
-        return sysUserDetailService.addFriend(userName);
-    }
-
-
-    @GetMapping("/myFriend")
-    public Result<List<SysUserEntity>> getMyFriend(){
-        return sysUserDetailService.getMyFriend();
     }
 
     /**

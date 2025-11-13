@@ -1,7 +1,8 @@
 package com.shutu.service.Impl;
+
 import cn.hutool.core.collection.CollUtil;
 import com.shutu.dao.SysRoleMenuDao;
-import com.shutu.domain.entity.SysRoleMenuEntity;
+import com.shutu.model.entity.SysRoleMenuEntity;
 import com.shutu.service.SysRoleMenuService;
 import com.shutu.commons.mybatis.service.impl.BaseServiceImpl;
 import org.springframework.stereotype.Service;
@@ -10,9 +11,6 @@ import java.util.List;
 
 /**
  * 角色菜单关系
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
  */
 @Service
 public class SysRoleMenuServiceImpl extends BaseServiceImpl<SysRoleMenuDao, SysRoleMenuEntity> implements SysRoleMenuService {

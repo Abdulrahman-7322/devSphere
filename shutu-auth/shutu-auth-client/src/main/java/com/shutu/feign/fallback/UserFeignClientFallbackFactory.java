@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * 用户接口 FallbackFactory
  *
- * @author Mark sunlightcs@gmail.com
+ * @author jiujingz@126.com
  */
 @Slf4j
 @Component
@@ -63,6 +63,11 @@ public class UserFeignClientFallbackFactory implements FallbackFactory<UserFeign
 
             @Override
             public Result<List<SysUserDTO>> listByIds(List<Long> ids) {
+                return new Result<>();
+            }
+
+            @Override
+            public Result<SysUserDTO> getByUsername(String query) {
                 return new Result<>();
             }
         };

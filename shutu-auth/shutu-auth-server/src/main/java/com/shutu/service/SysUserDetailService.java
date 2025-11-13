@@ -1,11 +1,6 @@
 package com.shutu.service;
 
 import com.shutu.commons.security.user.UserDetail;
-import com.shutu.commons.tools.utils.Result;
-import com.shutu.domain.entity.SysUserEntity;
-
-import java.util.List;
-import java.util.Set;
 
 /**
  * UserDetail Service
@@ -23,13 +18,15 @@ public interface SysUserDetailService {
      */
     UserDetail getUserDetailByUsername(String username);
 
-    Result<Boolean> addFriend(String userName);
-
-    Result<List<SysUserEntity>> getMyFriend();
+    /**
+     * 根据邮箱，获取用户详情
+     */
+    UserDetail getUserDetailByEmail(String email);
 
     /**
-     * 根据用户id更新用户地址信息
+     * 根据用户名或邮箱，获取用户详情
+     * @param email
+     * @return
      */
-    void updateUserAddressById(Long id,String address);
-
+    UserDetail getUserDetailByUsernameOrEmail(String email);
 }

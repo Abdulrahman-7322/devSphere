@@ -1,10 +1,4 @@
-/**
- * Copyright (c) 2018 人人开源 All rights reserved.
- * <p>
- * https://www.renren.io
- * <p>
- * 版权所有，侵权必究！
- */
+
 
 package com.shutu.commons.tools.utils;
 
@@ -15,9 +9,7 @@ import java.io.Serializable;
 
 /**
  * 响应数据
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+ 
  */
 @Schema(description = "响应")
 public class Result<T> implements Serializable {

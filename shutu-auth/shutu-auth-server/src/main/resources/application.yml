@@ -1,0 +1,130 @@
+# OAuth 2.0 统一客户端配置
+oauth2:
+  clients:
+    # Gitee 配置
+    gitee:
+      client-id: your_gitee_client_id
+      client-secret: your_gitee_client_secret
+      redirect-uri: http://localhost:8080/auth/oauth2/callback/gitee # 重定向URI / 回调地址
+      scope: "user_info" # 授权范围
+      authorize-url: "https://gitee.com/oauth/authorize"
+      token-url: "https://gitee.com/oauth/token"
+      user-info-url: "https://gitee.com/api/v5/user"
+
+    # 微信开放平台配置
+    wechat:
+      client-id: your_wechat_app_id  # 对应 appId
+      client-secret: your_wechat_app_secret # 对应 appSecret
+      redirect-uri: http://localhost:8080/auth/oauth2/callback/wechat
+      scope: "snsapi_login" # 微信PC端扫码登录
+      authorize-url: "https://open.weixin.qq.com/connect/qrconnect"
+      token-url: "https://api.weixin.qq.com/sns/oauth2/access_token"
+      user-info-url: "https://api.weixin.qq.com/sns/userinfo"
+
+    # QQ 配置
+    qq:
+      client-id: your_qq_app_id # 对应 appId
+      client-secret: your_qq_app_key # 对应 appKey
+      redirect-uri: http://localhost:8080/auth/oauth2/callback/qq
+      authorize-url: "https://graph.qq.com/oauth2.0/authorize"
+      token-url: "https://graph.qq.com/oauth2.0/token"
+      # QQ的特殊性，获取用户信息需要 openId，这里可以先定义一个模板URL
+      user-info-url: "https://graph.qq.com/user/get_user_info"
+      # QQ获取 openId 的 URL
+      open-id-url: "https://graph.qq.com/oauth2.0/me"
+
+    github:
+      client-id: your_github_client_id          # Client ID
+      client-secret: your_github_client_secret    # 替Client Secret
+      redirect-uri: http://localhost:8080/api/oauth2/callback/github # 必须与你在GitHub上填写的完全一致
+      scope: "read:user,user:email"             # 申请获取用户基本信息和邮箱的权限
+      authorize-url: "https://github.com/login/oauth/authorize"
+      token-url: "https://github.com/login/oauth/access_token"
+      user-info-url: "https://api.github.com/user"
+
+    google:
+      client-id: your_google_client_id       # Client ID
+      client-secret: your_google_client_secret   # 替Client Secret
+      redirect-uri: http://localhost:8080/api/oauth2/callback/google # 必须与你在Google Cloud上填写的完全一致
+      scope: "openid profile email"         # openid connect 标准scope，获取基本信息
+      authorize-url: "https://accounts.google.com/o/oauth2/v2/auth"
+      token-url: "https://oauth2.googleapis.com/token"
+      user-info-url: "https://www.googleapis.com/oauth2/v3/userinfo"
+
+    gitlab:
+      client-id: your_gitlab_application_id   # Application ID
+      client-secret: your_gitlab_secret       # Secret
+      redirect-uri: http://localhost:8080/api/oauth2/callback/gitlab # 必须与你在GitLab上填写的完全一致
+      scope: "read_user"                      # 获取用户基本信息的权限
+      authorize-url: "https://gitlab.com/oauth/authorize" # 如果是自建GitLab，请修改域名
+      token-url: "https://gitlab.com/oauth/token"         # 如果是自建GitLab，请修改域名
+      user-info-url: "https://gitlab.com/api/v4/user"     # 如果是自建GitLab，请修改域名
+
+    alipay:
+      client-id: your_alipay_app_id                # APPID
+      private-key: your_app_private_key       # 替换成你生成的应用私钥 (非常重要，注意保密)
+      alipay-public-key: your_alipay_public_key # 替换成你复制的支付宝公钥
+      redirect-uri: http://localhost:8080/api/oauth2/callback/alipay # 必须与你在支付宝平台填写的完全一致
+      scope: "auth_user"                      # 获取用户信息的必要scope
+      authorize-url: "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm"
+      gateway-url: "https://openapi.alipay.com/gateway.do"
+      sign-type: "RSA2"
+      charset: "UTF-8"
+
+# 前端登录成功后的回调地址
+app:
+  frontend:
+    login-redirect-url: "http://your-frontend-url/login/callback"
+
+# 验证码配置
+aj:
+  captcha:
+    ########## 重点关注 ##########
+    # 验证码类型：default,blockPuzzle,clickWord
+    type: default
+    # 底图路径，支持全路径、项目资源路径
+    #    jigsaw: classpath:images/jigsaw
+    # 滑动图路径，支持全路径、项目资源路径
+    #    pic-click: classpath:images/pic-click
+    # 缓存类型：local,redis,other
+    cache-type: redis
+    # local缓存的阈值,达到这个值，清除缓存
+    cache-number: 1000
+    # local定时清除过期缓存(单位秒)，设置为0代表不执行
+    timing-clear: 180
+    # 滑块验证码的偏移量
+    slip-offset: 5
+    # 滑块验证码的加密坐标
+    aes-status: true
+    # 滑块验证码的滑块干扰项
+    interference-options: 2
+    # 文字验证码的文字数量【暂不可用】
+    click-word-count: 4
+    # 文字验证码的文字字体
+    font-type: WenQuanZhengHei.ttf
+    # 文字验证码的字体样式
+    font-style: 1
+    # 文字验证码的字体大小
+    font-size: 25
+    # 水印文字
+    water-mark: 测试
+    # 水印文字字体
+    water-font: WenQuanZhengHei.ttf
+    ########## 接口相关配置 ##########
+    # 历史数据清理是否开启
+    history-data-clear-enable: false
+    # 接口请求次数一分钟限制是否开启
+    req-frequency-limit-enable: true
+    # 验证失败5次，get接口锁定
+    req-get-lock-limit: 5
+    # 验证失败后，锁定时间间隔,s
+    req-get-lock-seconds: 360
+    # get接口一分钟内请求数限制
+    req-get-minute-limit: 30
+    # check接口一分钟内请求数限制
+    req-check-minute-limit: 60
+    # verify接口一分钟内请求数限制
+    req-verify-minute-limit: 60
+logging:
+  level:
+    org.springframework.aop: DEBUG

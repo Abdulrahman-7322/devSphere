@@ -11,7 +11,7 @@ import java.util.Date;
 
 /**
  */
-@TableName(value ="user_friend_relate")
+@TableName(value ="dev_sphere_user_friend_relate")
 @Data
 public class UserFriendRelate implements Serializable {
     /**

@@ -3,17 +3,15 @@ package com.shutu.service;
 import com.shutu.commons.mybatis.service.BaseService;
 import com.shutu.commons.tools.page.PageData;
 import com.shutu.commons.tools.utils.Result;
-import com.shutu.domain.dto.SysUserDTO;
-import com.shutu.domain.entity.SysUserEntity;
+import com.shutu.model.dto.SysUserDTO;
+import com.shutu.model.entity.SysUserEntity;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * 用户管理
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+ 
  */
 public interface SysUserService extends BaseService<SysUserEntity> {
 

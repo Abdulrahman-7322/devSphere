@@ -8,9 +8,7 @@
 
 package com.shutu.commons.tools.redis;
 
-/**
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+/*
  */
 public class RedisKeys {
     /**
@@ -53,5 +51,14 @@ public class RedisKeys {
      */
     public static String getUserPermissionsKey(Long userId){
         return "sys:user:permissions:" + userId;
+    }
+
+    /**
+     * poap验证码Key
+     * @param emailTo 收件人
+     * @return
+     */
+    public static String getAuthCode(String emailTo){
+        return "shutu:auth:code:" + emailTo;
     }
 }

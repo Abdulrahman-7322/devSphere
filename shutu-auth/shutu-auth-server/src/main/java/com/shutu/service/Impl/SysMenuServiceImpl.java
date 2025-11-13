@@ -1,4 +1,5 @@
 package com.shutu.service.Impl;
+
 import com.alibaba.cloud.commons.lang.StringUtils;
 import com.shutu.commons.security.user.SecurityUser;
 import com.shutu.commons.security.user.UserDetail;
@@ -10,8 +11,8 @@ import com.shutu.commons.tools.utils.ConvertUtils;
 import com.shutu.commons.tools.utils.HttpContextUtils;
 import com.shutu.commons.tools.utils.TreeUtils;
 import com.shutu.dao.SysMenuDao;
-import com.shutu.domain.dto.SysMenuDTO;
-import com.shutu.domain.entity.SysMenuEntity;
+import com.shutu.model.dto.SysMenuDTO;
+import com.shutu.model.entity.SysMenuEntity;
 import com.shutu.enums.MenuTypeEnum;
 import com.shutu.redis.SysMenuRedis;
 import com.shutu.service.SysLanguageService;
@@ -25,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 /**
  * 菜单管理
  */

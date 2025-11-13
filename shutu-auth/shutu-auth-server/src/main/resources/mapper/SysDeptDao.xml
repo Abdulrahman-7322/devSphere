@@ -3,7 +3,7 @@
 
 <mapper namespace="com.shutu.dao.SysDeptDao">
 
-    <select id="getList" resultType="com.shutu.domain.entity.SysDeptEntity">
+    <select id="getList" resultType="com.shutu.model.entity.SysDeptEntity">
         select t1.*,(select t2.name from sys_dept t2 where t2.id=t1.pid)parentName from sys_dept t1
             where t1.del_flag = 0
         <if test="deptIdList != null">
@@ -15,12 +15,12 @@
         order by t1.sort asc
     </select>
 
-    <select id="getById" resultType="com.shutu.domain.entity.SysDeptEntity">
+    <select id="getById" resultType="com.shutu.model.entity.SysDeptEntity">
         select t1.*,(select t2.name from sys_dept t2 where t2.id=t1.pid)parentName from sys_dept t1
           where t1.id = #{value} and t1.del_flag = 0
     </select>
 
-    <select id="getIdAndPidList" resultType="com.shutu.domain.entity.SysDeptEntity">
+    <select id="getIdAndPidList" resultType="com.shutu.model.entity.SysDeptEntity">
         select t1.id, t1.pid from sys_dept t1 where t1.del_flag = 0
     </select>
 

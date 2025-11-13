@@ -9,7 +9,7 @@ import com.shutu.commons.tools.validator.ValidatorUtils;
 import com.shutu.commons.tools.validator.group.AddGroup;
 import com.shutu.commons.tools.validator.group.DefaultGroup;
 import com.shutu.commons.tools.validator.group.UpdateGroup;
-import com.shutu.domain.dto.SysRoleDTO;
+import com.shutu.model.dto.SysRoleDTO;
 import com.shutu.service.SysRoleDataScopeService;
 import com.shutu.service.SysRoleMenuService;
 import com.shutu.service.SysRoleService;

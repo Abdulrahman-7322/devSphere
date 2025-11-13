@@ -1,4 +1,7 @@
 ignore_urls:
+  - /captcha
+  - /login
+  - /access-token
   - /actuator/**
   - /v3/api-docs/**
   - /webjars/**

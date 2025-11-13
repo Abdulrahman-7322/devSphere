@@ -1,6 +1,6 @@
 package com.shutu.service;
 
-import com.shutu.domain.entity.SysLanguageEntity;
+import com.shutu.model.entity.SysLanguageEntity;
 import com.shutu.commons.mybatis.service.BaseService;
 
 /**

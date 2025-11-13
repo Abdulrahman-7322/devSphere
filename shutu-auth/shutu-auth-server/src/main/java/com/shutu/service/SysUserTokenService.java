@@ -1,15 +1,13 @@
 package com.shutu.service;
 
 
-import com.shutu.domain.dto.UserTokenDTO;
-import com.shutu.domain.entity.SysUserTokenEntity;
+import com.shutu.model.dto.UserTokenDTO;
+import com.shutu.model.entity.SysUserTokenEntity;
 import com.shutu.commons.mybatis.service.BaseService;
-import org.springframework.stereotype.Service;
 
 /**
- * 用户Token
- *
- * @author Mark sunlightcs@gmail.com
+ * 用户 Token
+ * @author jiujingz@126.com
  */
 
 public interface SysUserTokenService extends BaseService<SysUserTokenEntity> {
@@ -50,4 +48,6 @@ public interface SysUserTokenService extends BaseService<SysUserTokenEntity> {
      * @param userId 用户ID
      */
     void updateCacheAuthByUserId(Long userId);
+
+    Boolean isSave(String username);
 }

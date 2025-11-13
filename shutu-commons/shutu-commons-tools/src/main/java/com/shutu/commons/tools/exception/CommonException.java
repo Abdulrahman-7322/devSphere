@@ -1,10 +1,13 @@
 package com.shutu.commons.tools.exception;
 
-import lombok.Getter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-@Getter
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class CommonException extends RuntimeException{
     private int code;
+    private String msg;
 
     public CommonException(String message, int code) {
         super(message);
@@ -19,5 +22,9 @@ public class CommonException extends RuntimeException{
     public CommonException(Throwable cause, int code) {
         super(cause);
         this.code = code;
+    }
+
+    public CommonException(String message) {
+        super(message);
     }
 }

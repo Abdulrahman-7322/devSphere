@@ -11,7 +11,7 @@ package com.shutu.enums;
 /**
  * 接受者类型枚举
  *
- * @author Mark sunlightcs@gmail.com
+ * @author jiujingz@126.com
  */
 public enum ReceiverTypeEnum {
     /**

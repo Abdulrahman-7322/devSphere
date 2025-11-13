@@ -1,17 +1,13 @@
-
-
 package com.shutu.service.Impl;
 
 import com.shutu.dao.SysLanguageDao;
-import com.shutu.domain.entity.SysLanguageEntity;
+import com.shutu.model.entity.SysLanguageEntity;
 import com.shutu.service.SysLanguageService;
 import com.shutu.commons.mybatis.service.impl.BaseServiceImpl;
 import org.springframework.stereotype.Service;
 
 /**
  * 国际化
- *
- * @author Mark sunlightcs@gmail.com
  */
 @Service
 public class SysLanguageServiceImpl extends BaseServiceImpl<SysLanguageDao, SysLanguageEntity> implements SysLanguageService {

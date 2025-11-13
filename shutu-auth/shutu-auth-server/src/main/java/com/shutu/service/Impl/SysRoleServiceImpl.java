@@ -11,14 +11,13 @@ import com.shutu.commons.tools.enums.SuperAdminEnum;
 import com.shutu.commons.tools.page.PageData;
 import com.shutu.commons.tools.utils.ConvertUtils;
 import com.shutu.dao.SysRoleDao;
-import com.shutu.domain.dto.SysRoleDTO;
-import com.shutu.domain.entity.SysRoleEntity;
+import com.shutu.model.dto.SysRoleDTO;
+import com.shutu.model.entity.SysRoleEntity;
 import com.shutu.service.*;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

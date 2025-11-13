@@ -1,4 +1,5 @@
 package com.shutu.commons.security.config;
+
 import com.shutu.commons.security.exception.SecurityAuthenticationEntryPoint;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -13,15 +14,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.util.List;
-import java.util.stream.Collectors;
-
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
 /**
@@ -37,9 +34,6 @@ public class SecurityConfig {
     private final OncePerRequestFilter authenticationTokenFilter;
     private final SecurityResource securityResource;
 
-
-    // 配置Security的加解密器
-
     @Bean
     @SneakyThrows
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) {
@@ -50,7 +44,7 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // 忽略地址列表
         List<String> permitList = securityResource.getPermitList();
-        List<AntPathRequestMatcher> permits = permitList.stream().map(AntPathRequestMatcher::new).collect(Collectors.toList());
+        List<AntPathRequestMatcher> permits = permitList.stream().map(AntPathRequestMatcher::new).toList();
 
         http
                 .addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
@@ -58,7 +52,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(permits.toArray(new AntPathRequestMatcher[0])).permitAll()
                         .requestMatchers(antMatcher(HttpMethod.OPTIONS)).permitAll()
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(new SecurityAuthenticationEntryPoint()))
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))

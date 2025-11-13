@@ -7,7 +7,7 @@ import com.shutu.commons.tools.utils.Result;
 import com.shutu.commons.tools.validator.AssertUtils;
 import com.shutu.commons.tools.validator.ValidatorUtils;
 import com.shutu.commons.tools.validator.group.DefaultGroup;
-import com.shutu.domain.dto.SysMenuDTO;
+import com.shutu.model.dto.SysMenuDTO;
 import com.shutu.service.SysMenuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

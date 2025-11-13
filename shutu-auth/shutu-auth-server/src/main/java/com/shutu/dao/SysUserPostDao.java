@@ -1,7 +1,7 @@
 package com.shutu.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.shutu.domain.entity.SysUserPostEntity;
+import com.shutu.model.entity.SysUserPostEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
 /**
 * 用户岗位关系
 *
-* @author Mark sunlightcs@gmail.com
+* @author jiujingz@126.com
 */
 @Mapper
 public interface SysUserPostDao extends BaseMapper<SysUserPostEntity> {

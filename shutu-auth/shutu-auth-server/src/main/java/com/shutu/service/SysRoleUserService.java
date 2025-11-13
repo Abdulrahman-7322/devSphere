@@ -1,15 +1,13 @@
 package com.shutu.service;
 
-import com.shutu.domain.entity.SysRoleUserEntity;
+import com.shutu.model.entity.SysRoleUserEntity;
 import com.shutu.commons.mybatis.service.BaseService;
 
 import java.util.List;
 
 /**
  * 角色用户关系
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+ 
  */
 public interface SysRoleUserService extends BaseService<SysRoleUserEntity> {
 

@@ -35,6 +35,7 @@ public class SseServer {
      */
     private static final Map<String, SseEmitter> SSE_EMITTER_MAP = new ConcurrentHashMap<>();
 
+
     /**
      * 创建sse连接
      *

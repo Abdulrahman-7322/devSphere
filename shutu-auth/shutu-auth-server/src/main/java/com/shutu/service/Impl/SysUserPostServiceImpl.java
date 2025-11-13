@@ -1,7 +1,8 @@
 package com.shutu.service.Impl;
+
 import cn.hutool.core.collection.CollUtil;
 import com.shutu.dao.SysUserPostDao;
-import com.shutu.domain.entity.SysUserPostEntity;
+import com.shutu.model.entity.SysUserPostEntity;
 import com.shutu.service.SysUserPostService;
 import com.shutu.commons.mybatis.service.impl.BaseServiceImpl;
 import org.springframework.stereotype.Service;

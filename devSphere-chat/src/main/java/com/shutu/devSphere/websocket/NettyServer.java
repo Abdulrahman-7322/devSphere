@@ -17,17 +17,20 @@ import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.Future;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class NettyServer {
 
-    private static final int PORT = 8080;
+    private static final int PORT = 9000;
     // 创建线程执行器
     private static final EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     private static final EventLoopGroup workerGroup = new NioEventLoopGroup(8);
+    private final AuthHandler authHandler;
 
     /**
      * 启动
@@ -35,29 +38,40 @@ public class NettyServer {
      */
     @PostConstruct
     private void start() throws InterruptedException {
-        run();
+        new Thread(() -> {
+            try {
+                startServer();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     /**
      * 创建 netty 服务端
      */
-    private void run() throws InterruptedException {
+    private void startServer() throws InterruptedException {
         ServerBootstrap serverBootstrap = new ServerBootstrap();
         serverBootstrap.group(bossGroup,workerGroup)
-                .channel(NioServerSocketChannel.class)
-                .option(ChannelOption.SO_BACKLOG,128)
-                .childOption(ChannelOption.SO_KEEPALIVE,true)
-                .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(new ChannelInitializer<SocketChannel>() {
+                .channel(NioServerSocketChannel.class) // 指定使用 NIO 非阻塞传输模型
+                .option(ChannelOption.SO_BACKLOG,128) // 设置 TCP 半连接队列大小
+                .childOption(ChannelOption.SO_KEEPALIVE,true) // 开启 TCP 底层心跳机制
+                .handler(new LoggingHandler(LogLevel.INFO)) // 在 Boss 线程组添加日志处理器
+                .childHandler(new ChannelInitializer<SocketChannel>() { // 配置 Worker 线程组的处理器管道
                     @Override
-                    protected void initChannel(SocketChannel channel) throws Exception {
+                    protected void initChannel(SocketChannel channel) {
                         ChannelPipeline pipeline = channel.pipeline();
+                        pipeline.addLast(new LoggingHandler("DEBUG_LOGGER", LogLevel.INFO));
+                        // 如果 30 秒内没有收到客户端的任何数据（读空闲），会触发一个 IdleStateEvent 事件。
                         pipeline.addLast(new IdleStateHandler(30,0,0));
                         pipeline.addLast(new HttpServerCodec());
+                        // 支持异步发送大数据流
                         pipeline.addLast(new ChunkedWriteHandler());
+                        // HTTP 消息聚合器，Netty 默认会将一个 HTTP 请求拆分成多个小片段（HttpRequest, HttpContent, LastHttpContent）。
+                        // 这个 Handler 会把它们合并成一个完整的 FullHttpRequest 对象，方便后续处理。
                         pipeline.addLast(new HttpObjectAggregator(8192));
                         //websocket
-                        pipeline.addLast(new AuthHandler());
+                        pipeline.addLast(authHandler);
                         pipeline.addLast(new WebSocketServerProtocolHandler("/ws"));
                         pipeline.addLast(new WebSocketServerHandler());
                     }

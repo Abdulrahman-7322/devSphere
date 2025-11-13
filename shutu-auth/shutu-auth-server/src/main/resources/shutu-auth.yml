@@ -1,7 +1,11 @@
 ignore_urls:
-  - /auth/captcha
-  - /auth/login
-  - /auth/access-token
+  - /user/getById
+  - /captcha/get
+  - /captcha/check
+  - /user/save
+  - /user/info
+  - /login
+  - /verify/access-token
   - /monitor/**
   - /user/getRealNameList
   - /user/getUserIdListByRoleIdList

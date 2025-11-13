@@ -16,6 +16,8 @@
 
     <modules>
         <module>shutu-api</module>
+        <module>shutu-oss</module>
+        <module>shutu-message</module>
     </modules>
 
 </project>

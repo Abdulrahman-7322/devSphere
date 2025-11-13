@@ -1,8 +1,11 @@
 package com.shutu.service.Impl;
+
 import com.shutu.commons.tools.redis.RedisKeys;
+
 import com.shutu.commons.tools.redis.RedisUtils;
 import com.shutu.service.CaptchaService;
-import jakarta.annotation.Resource;
+import com.wf.captcha.SpecCaptcha;
+import com.wf.captcha.base.Captcha;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,33 +13,27 @@ import java.io.IOException;
 
 /**
  * 验证码
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
  */
 @Service
 @AllArgsConstructor
 public class CaptchaServiceImpl implements CaptchaService {
-
-    @Resource
-    private RedisUtils redisUtils;
-
+    private final RedisUtils redisUtils;
 
     @Override
     public void create(HttpServletResponse response, String uuid) throws IOException {
-//        response.setContentType("image/gif");
-//        response.setHeader("Pragma", "No-cache");
-//        response.setHeader("Cache-Control", "no-cache");
-//        response.setDateHeader("Expires", 0);
-//
-//        //生成验证码
-//        SpecCaptcha captcha = new SpecCaptcha(150, 40);
-//        captcha.setLen(5);
-//        captcha.setCharType(Captcha.TYPE_DEFAULT);
-//        captcha.out(response.getOutputStream());
-//
-//        //保存验证码
-//        setCache(uuid, captcha.text());
+        response.setContentType("image/gif");
+        response.setHeader("Pragma", "No-cache");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setDateHeader("Expires", 0);
+
+        //生成验证码
+        SpecCaptcha captcha = new SpecCaptcha(150, 40);
+        captcha.setLen(5);
+        captcha.setCharType(Captcha.TYPE_DEFAULT);
+        captcha.out(response.getOutputStream());
+
+        //保存验证码
+        setCache(uuid, captcha.text());
     }
 
     @Override
@@ -64,5 +61,4 @@ public class CaptchaServiceImpl implements CaptchaService {
 
         return captcha;
     }
-
 }

@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Swagger配置
  *
- * @author Mark sunlightcs@gmail.com
+ * @author jiujingz@126.com
  */
 @Configuration
 public class SwaggerConfig {

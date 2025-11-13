@@ -1,10 +1,4 @@
-/**
- * Copyright (c) 2018 人人开源 All rights reserved.
- * <p>
- * https://www.renren.io
- * <p>
- * 版权所有，侵权必究！
- */
+
 package com.shutu.gateway.route;
 
 import com.alibaba.cloud.nacos.NacosConfigManager;
@@ -32,7 +26,7 @@ import java.util.concurrent.Executor;
 /**
  * Nacos动态路由支持
  *
- * @author Mark sunlightcs@gmail.com
+ * @author jiujingz@126.com
  */
 @Component
 public class NacosRouteDefinitionRepository implements RouteDefinitionRepository {

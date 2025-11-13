@@ -1,10 +1,4 @@
-/**
- * Copyright (c) 2018 人人开源 All rights reserved.
- * <p>
- * https://www.renren.io
- * <p>
- * 版权所有，侵权必究！
- */
+
 
 package com.shutu.commons.tools.redis;
 
@@ -20,7 +14,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 /**
  * Redis配置
  *
- * @author Mark sunlightcs@gmail.com
+ * @author jiujingz@126.com
  */
 @Configuration
 public class RedisConfig {

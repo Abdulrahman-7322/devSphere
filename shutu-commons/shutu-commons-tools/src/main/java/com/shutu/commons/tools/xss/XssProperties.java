@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * XSS 配置项
  *
- * @author Mark sunlightcs@gmail.com
+ * @author jiujingz@126.com
  */
 @Data
 @ConfigurationProperties(prefix = "renren.xss")

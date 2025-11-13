@@ -1,6 +1,6 @@
 package com.shutu.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.shutu.domain.entity.SysRoleMenuEntity;
+import com.shutu.model.entity.SysRoleMenuEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;

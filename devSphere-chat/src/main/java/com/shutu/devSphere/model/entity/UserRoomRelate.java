@@ -15,7 +15,7 @@ import java.util.Date;
 /**
  *
  */
-@TableName(value ="user_room_relate")
+@TableName(value ="dev_sphere_user_room_relate")
 @Data
 @Builder
 @AllArgsConstructor

@@ -4,7 +4,7 @@ package com.shutu.commons.tools.xss;
 ///**
 // * XSS过滤工具类
 // *
-// * @author Mark sunlightcs@gmail.com
+// * @author jiujingz@126.com
 // * @since 1.0.0
 // */
 //public class XssUtils extends Whitelist {

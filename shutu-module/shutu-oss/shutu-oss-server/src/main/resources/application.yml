@@ -1,0 +1,8 @@
+app:
+  minio:
+    domain:
+      name: minio.orasap.cn
+  backend:
+    ip: 118.31.119.34
+  frontend:
+    login-redirect-url: http://test.orasap.cn

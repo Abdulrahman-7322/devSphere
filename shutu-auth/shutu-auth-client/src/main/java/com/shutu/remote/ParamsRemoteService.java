@@ -1,10 +1,4 @@
-/**
- * Copyright (c) 2018 人人开源 All rights reserved.
- * <p>
- * https://www.renren.io
- * <p>
- * 版权所有，侵权必究！
- */
+
 
 package com.shutu.remote;
 
@@ -19,7 +13,7 @@ import org.springframework.stereotype.Component;
 /**
  * 参数
  *
- * @author Mark sunlightcs@gmail.com
+ * @author jiujingz@126.com
  */
 @Component
 public class ParamsRemoteService {

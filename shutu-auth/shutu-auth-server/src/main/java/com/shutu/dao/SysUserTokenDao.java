@@ -1,7 +1,6 @@
 package com.shutu.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.shutu.domain.entity.SysUserTokenEntity;
-import org.apache.ibatis.annotations.MapKey;
+import com.shutu.model.entity.SysUserTokenEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

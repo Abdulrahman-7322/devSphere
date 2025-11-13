@@ -1,22 +1,17 @@
-package com.shutu.dao;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.shutu.domain.entity.SysUserEntity;
+package com.shutu.dao; 
+
+import com.shutu.commons.mybatis.dao.BaseDao;
+import com.shutu.model.entity.SysUserEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-
 import java.util.List;
 import java.util.Map;
 
 /**
  * 用户管理
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
  */
 @Mapper
-public interface SysUserDao extends BaseMapper<SysUserEntity> {
-
+public interface SysUserDao extends BaseDao<SysUserEntity> {
 
     List<SysUserEntity> getList(Map<String, Object> params);
 
@@ -58,37 +53,47 @@ public interface SysUserDao extends BaseMapper<SysUserEntity> {
      */
     Long getLeaderIdListByUserId(Long userId);
 
-    @Select("select * from sys_user where username = #{username}")
-    SysUserEntity selectByUsername(@Param("username") String username);
+    /**
+     * 根据QQ OpenID获取用户
+     * @return 用户信息
+     */
+    SysUserEntity getByQQOpenId(@Param("openid") String openid);
+
+    /**
+     * 根据邮箱获取用户
+     * @return 用户信息
+     */
+    SysUserEntity getByEmail(String email);
+
+    /**
+     * 根据用户名或邮箱获取用户
+     * @return 用户信息
+     */
+    SysUserEntity getUserDetailByUsernameOrEmail(@Param("username") String username, @Param("email") String email);
+
+
+    /**
+     * 根据用户名获取用户
+     * @return 用户信息
+     */
+    SysUserEntity selectByUsername(String username);
+
+    /**
+     * 根据第三方登录平台和平台唯一ID查询用户
+     * 用于OAuth2.0登录，判断用户是否已存在
+     *
+     * @param platform 平台名称 (e.g., "gitee", "wechat", "qq")
+     * @param uniqueId 用户在该平台上的唯一标识
+     * @return 匹配的用户实体，如果不存在则返回 null
+     */
+    SysUserEntity findByPlatformAndUniqueId(@Param("platform") String platform, @Param("uniqueId") String uniqueId);
+
+    /**
+     * 根据用户名查询用户
+     * 用于在注册新用户时，确保生成的用户名是唯一的
+     *
+     * @param username 用户名
+     * @return 匹配的用户实体，如果不存在则返回 null
+     */
+    SysUserEntity findByUsername(@Param("username") String username);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

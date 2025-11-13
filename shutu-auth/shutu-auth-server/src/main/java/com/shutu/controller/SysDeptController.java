@@ -6,7 +6,7 @@ import com.shutu.commons.tools.validator.ValidatorUtils;
 import com.shutu.commons.tools.validator.group.AddGroup;
 import com.shutu.commons.tools.validator.group.DefaultGroup;
 import com.shutu.commons.tools.validator.group.UpdateGroup;
-import com.shutu.domain.dto.SysDeptDTO;
+import com.shutu.model.dto.SysDeptDTO;
 import com.shutu.service.SysDeptService;
 import com.shutu.service.SysUserService;
 import io.swagger.v3.oas.annotations.Operation;

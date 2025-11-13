@@ -28,9 +28,7 @@ import java.util.function.BiConsumer;
 
 /**
  * 基础服务类，所有Service都要继承
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+ 
  */
 public abstract class BaseServiceImpl<M extends BaseMapper<T>, T> implements BaseService<T> {
     @Autowired

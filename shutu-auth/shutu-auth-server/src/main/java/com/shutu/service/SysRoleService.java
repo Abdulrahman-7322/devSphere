@@ -1,9 +1,8 @@
-
 package com.shutu.service;
 
 import com.shutu.commons.tools.page.PageData;
-import com.shutu.domain.dto.SysRoleDTO;
-import com.shutu.domain.entity.SysRoleEntity;
+import com.shutu.model.dto.SysRoleDTO;
+import com.shutu.model.entity.SysRoleEntity;
 import com.shutu.commons.mybatis.service.BaseService;
 
 import java.util.List;

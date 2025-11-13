@@ -1,4 +1,5 @@
 package com.shutu.service.Impl;
+
 import com.alibaba.cloud.commons.lang.StringUtils;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.shutu.commons.security.user.SecurityUser;
@@ -8,15 +9,16 @@ import com.shutu.commons.tools.page.PageData;
 import com.shutu.commons.tools.utils.ConvertUtils;
 import com.shutu.commons.tools.utils.Result;
 import com.shutu.dao.SysUserDao;
-import com.shutu.domain.dto.SysUserDTO;
-import com.shutu.domain.entity.SysUserEntity;
+import com.shutu.model.dto.SysUserDTO;
+import com.shutu.model.entity.SysUserEntity;
 import com.shutu.service.*;
 import com.shutu.commons.mybatis.service.impl.BaseServiceImpl;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -98,6 +100,9 @@ public class SysUserServiceImpl extends BaseServiceImpl<SysUserDao, SysUserEntit
         insert(entity);
 
         //保存角色用户关系
+        ArrayList<Long> ids = new ArrayList<>();
+        ids.add(1L);
+        dto.setRoleIdList(ids);
         sysRoleUserService.saveOrUpdate(entity.getId(), dto.getRoleIdList());
 
         //保存用户岗位关系

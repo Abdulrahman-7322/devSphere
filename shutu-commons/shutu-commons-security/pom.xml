@@ -28,6 +28,12 @@
             <groupId>com.shutu</groupId>
             <artifactId>shutu-commons-tools</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+            <version>1.18.38</version>
+        </dependency>
 
     </dependencies>
 

@@ -1,4 +1,5 @@
 package com.shutu.service.Impl;
+
 import com.shutu.commons.security.user.SecurityUser;
 import com.shutu.commons.security.user.UserDetail;
 import com.shutu.commons.tools.constant.Constant;
@@ -9,8 +10,8 @@ import com.shutu.commons.tools.utils.ConvertUtils;
 import com.shutu.commons.tools.utils.TreeUtils;
 import com.shutu.dao.SysDeptDao;
 import com.shutu.dao.SysUserDao;
-import com.shutu.domain.dto.SysDeptDTO;
-import com.shutu.domain.entity.SysDeptEntity;
+import com.shutu.model.dto.SysDeptDTO;
+import com.shutu.model.entity.SysDeptEntity;
 import com.shutu.service.SysDeptService;
 import com.shutu.commons.mybatis.service.impl.BaseServiceImpl;
 import jakarta.annotation.Resource;
@@ -24,9 +25,6 @@ import java.util.Map;
 
 /**
  * 部门管理
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
  */
 @Service
 public class SysDeptServiceImpl extends BaseServiceImpl<SysDeptDao, SysDeptEntity> implements SysDeptService {

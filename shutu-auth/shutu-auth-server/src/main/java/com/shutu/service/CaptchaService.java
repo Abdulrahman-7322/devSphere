@@ -1,12 +1,13 @@
+
+
 package com.shutu.service;
+
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 /**
  * 验证码
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
  */
 public interface CaptchaService {
 

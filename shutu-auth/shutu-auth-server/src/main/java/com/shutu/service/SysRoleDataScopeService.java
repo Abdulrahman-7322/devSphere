@@ -1,6 +1,6 @@
 package com.shutu.service;
 
-import com.shutu.domain.entity.SysRoleDataScopeEntity;
+import com.shutu.model.entity.SysRoleDataScopeEntity;
 import com.shutu.commons.mybatis.service.BaseService;
 
 import java.util.List;

@@ -11,7 +11,7 @@ package com.shutu.enums;
 /**
  * 叶子节点枚举
  *
- * @author Mark sunlightcs@gmail.com
+ * @author jiujingz@126.com
  */
 public enum RegionLeafEnum {
     YES(1),

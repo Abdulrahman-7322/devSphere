@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * 分页工具
  *
- * @author Mark sunlightcs@gmail.com
+ * @author jiujingz@126.com
  */
 public class PageUtils {
 

@@ -14,9 +14,13 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Getter
 public enum MessageTypeEnum {
-    GROUP(1, "群聊"),
-    PRIVATE(2, "私聊"),
-    ;
+
+    TEXT(1, "正常文本"),
+    RECALL(2, "撤回消息"),
+    IMAGE(3, "图片"),
+    VOICE(4, "语音"),
+    VIDEO(5, "视频"),
+    FILE(6, "文件");
 
     private final Integer type;
     private final String desc;

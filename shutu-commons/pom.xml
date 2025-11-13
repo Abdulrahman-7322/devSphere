@@ -22,6 +22,7 @@
         <module>shutu-commons-tools</module>
         <module>shutu-commons-mybatis</module>
         <module>shutu-commons-dynamic-datasource</module>
+        <module>shutu-commons-log</module>
     </modules>
 
 

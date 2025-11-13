@@ -3,7 +3,7 @@
 
 <mapper namespace="com.shutu.dao.SysMenuDao">
 
-    <select id="getById" resultType="com.shutu.domain.entity.SysMenuEntity">
+    <select id="getById" resultType="com.shutu.model.entity.SysMenuEntity">
         select t1.*,
         (select lang.field_value from sys_language lang where lang.table_name='sys_menu' and lang.field_name='name'
         and lang.table_id=t1.pid and lang.language=#{language}) as parentName,
@@ -13,7 +13,7 @@
           where t1.id = #{id} and t1.del_flag = 0
     </select>
 
-    <select id="getMenuList" resultType="com.shutu.domain.entity.SysMenuEntity">
+    <select id="getMenuList" resultType="com.shutu.model.entity.SysMenuEntity">
         select t1.*, (select lang.field_value from sys_language lang where lang.table_name='sys_menu' and lang.field_name='name'
         and lang.table_id=t1.id and lang.language=#{language}) as name
         from sys_menu t1 where t1.del_flag = 0
@@ -23,7 +23,7 @@
         order by t1.sort asc
     </select>
 
-    <select id="getUserMenuList" resultType="com.shutu.domain.entity.SysMenuEntity">
+    <select id="getUserMenuList" resultType="com.shutu.model.entity.SysMenuEntity">
         select t3.*, (select lang.field_value from sys_language lang where lang.table_name='sys_menu' and lang.field_name='name'
         and lang.table_id=t3.id and lang.language=#{language}) as name from sys_role_user t1
         left join sys_role_menu t2 on t1.role_id = t2.role_id
@@ -35,7 +35,7 @@
         order by t3.sort asc
     </select>
 
-    <select id="getListPid" resultType="com.shutu.domain.entity.SysMenuEntity">
+    <select id="getListPid" resultType="com.shutu.model.entity.SysMenuEntity">
         select * from sys_menu where del_flag = 0 and pid = #{value}
     </select>
 

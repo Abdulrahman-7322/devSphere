@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public class GroupDataSource implements DataSource {
     @Resource
     private RoomGroupService roomGroupService;
+
     @Override
     public FriendContentVo doSearch(List<Long> ids) {
         // 创建一个FriendContentVo实例

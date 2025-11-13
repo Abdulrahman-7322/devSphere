@@ -4,7 +4,7 @@ package com.shutu.redis;
 import com.shutu.commons.tools.redis.RedisKeys;
 import com.shutu.commons.tools.redis.RedisUtils;
 import com.shutu.commons.tools.utils.HttpContextUtils;
-import com.shutu.domain.dto.SysMenuDTO;
+import com.shutu.model.dto.SysMenuDTO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +13,7 @@ import java.util.Set;
 
 /**
  * 菜单管理
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+ 
  */
 @Component
 public class SysMenuRedis {

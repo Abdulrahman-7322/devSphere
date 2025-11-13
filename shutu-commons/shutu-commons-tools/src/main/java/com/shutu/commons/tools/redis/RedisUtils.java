@@ -13,9 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Redis工具类
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+ 
  */
 
 
@@ -41,7 +39,10 @@ public class RedisUtils {
      * 不设置过期时长
      */
     public final static long NOT_EXPIRE = -1L;
-
+    /**
+     * 5分钟的过期时长
+     */
+    public final static long FIVE_MINUTE_EXPIRE = 5 * 60L;
     public void set(String key, Object value, long expire) {
         redisTemplate.opsForValue().set(key, value);
         if (expire != NOT_EXPIRE) {

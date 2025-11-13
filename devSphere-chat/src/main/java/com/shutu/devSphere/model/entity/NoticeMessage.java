@@ -11,7 +11,7 @@ import java.util.Date;
 
 /**
  */
-@TableName(value ="notice_message")
+@TableName(value ="dev_sphere_notice_message")
 @Data
 public class NoticeMessage implements Serializable {
     /**

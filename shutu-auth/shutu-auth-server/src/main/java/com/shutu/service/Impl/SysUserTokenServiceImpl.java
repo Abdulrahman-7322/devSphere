@@ -1,4 +1,5 @@
 package com.shutu.service.Impl;
+
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -10,8 +11,8 @@ import com.shutu.commons.security.utils.TokenUtils;
 import com.shutu.commons.tools.exception.ErrorCode;
 import com.shutu.commons.tools.exception.ZException;
 import com.shutu.dao.SysUserTokenDao;
-import com.shutu.domain.dto.UserTokenDTO;
-import com.shutu.domain.entity.SysUserTokenEntity;
+import com.shutu.model.dto.UserTokenDTO;
+import com.shutu.model.entity.SysUserTokenEntity;
 import com.shutu.service.SysUserDetailService;
 import com.shutu.service.SysUserTokenService;
 import com.shutu.commons.mybatis.service.impl.BaseServiceImpl;
@@ -23,8 +24,6 @@ import java.util.List;
 
 /**
  * 用户Token
- *
- * @author Mark sunlightcs@gmail.com
  */
 @Service
 @AllArgsConstructor
@@ -59,6 +58,12 @@ public class SysUserTokenServiceImpl extends BaseServiceImpl<SysUserTokenDao, Sy
         }
 
         return Convert.convert(UserTokenDTO.class, entity);
+    }
+
+    @Override
+    public Boolean isSave(String username) {
+        UserDetail userDetailByUsername = sysUserDetailService.getUserDetailByUsername(username);
+        return userDetailByUsername == null?false:true;
     }
 
     @Override

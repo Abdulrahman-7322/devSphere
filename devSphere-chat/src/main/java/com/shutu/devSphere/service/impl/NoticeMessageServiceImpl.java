@@ -16,7 +16,6 @@ import com.shutu.devSphere.model.dto.friend.FriendAddRequest;
 import com.shutu.devSphere.model.entity.NoticeMessage;
 import com.shutu.devSphere.model.entity.UserFriendRelate;
 import com.shutu.devSphere.model.enums.ProcessResultTypeEnum;
-import com.shutu.devSphere.model.enums.chat.MessageTypeEnum;
 import com.shutu.devSphere.model.enums.chat.NoticeTypeEnum;
 import com.shutu.devSphere.model.enums.chat.ReadTargetTypeEnum;
 import com.shutu.devSphere.model.enums.chat.RoomTypeEnum;
@@ -24,7 +23,6 @@ import com.shutu.devSphere.model.enums.ws.WSReqTypeEnum;
 import com.shutu.devSphere.model.vo.message.ChatMessageVo;
 import com.shutu.devSphere.model.vo.message.MessageNumVo;
 import com.shutu.devSphere.model.vo.message.NoticeMessageVo;
-import com.shutu.devSphere.model.vo.ws.request.WSBaseReq;
 import com.shutu.devSphere.service.NoticeMessageService;
 import com.shutu.devSphere.service.UserFriendRelateService;
 import com.shutu.devSphere.sse.SseServer;
@@ -89,9 +87,8 @@ public class NoticeMessageServiceImpl extends ServiceImpl<NoticeMessageMapper, N
             // 向目标用户发送通知消息
             SseServer.sendMessage(USER_KEY + toUserId, JSONUtil.toJsonStr(noticeMessageVo));
         }
-
-
     }
+
 
     @Override
     public MessageNumVo getMessageNum() {
@@ -108,6 +105,7 @@ public class NoticeMessageServiceImpl extends ServiceImpl<NoticeMessageMapper, N
 
         return messageNumVo;
     }
+
 
     @Override
     public List<NoticeMessageVo> getMessageNoticeList() {
@@ -134,6 +132,7 @@ public class NoticeMessageServiceImpl extends ServiceImpl<NoticeMessageMapper, N
         }).collect(Collectors.toList());
     }
 
+
     @Override
     public Boolean readMessageNotice(Long id) {
         // 根据通知消息ID查询通知消息
@@ -147,6 +146,7 @@ public class NoticeMessageServiceImpl extends ServiceImpl<NoticeMessageMapper, N
         // 更新通知消息的状态
         return this.updateById(noticeMessage);
     }
+
 
     @Override
     public String handleMessageNotice(MessageNoticeUpdateRequest noticeUpdateRequest) {
@@ -173,7 +173,7 @@ public class NoticeMessageServiceImpl extends ServiceImpl<NoticeMessageMapper, N
                 saveUserRelate(noticeMessage);
                 // 构建聊天消息体
                 ChatMessageVo chatMessageVo = new ChatMessageVo();
-                chatMessageVo.setType(MessageTypeEnum.PRIVATE.getType());
+                chatMessageVo.setType(RoomTypeEnum.PRIVATE.getType());
                 chatMessageVo.setContent(ADD_USER_MESSAGE);
                 // 构建WebSocket消息基础请求
                 WSBaseResp<ChatMessageVo> wsBaseResp = new WSBaseResp<>();
@@ -183,13 +183,13 @@ public class NoticeMessageServiceImpl extends ServiceImpl<NoticeMessageMapper, N
                 // 发送WebSocket消息
                 webSocketService.sendToUid(wsBaseResp,userId);
             }
-
         }
 
         this.updateById(noticeMessage);
 
         return desc;
     }
+
 
     private void saveUserRelate(NoticeMessage noticeMessage) {
         // 创建用户和朋友的关系列表
@@ -202,6 +202,8 @@ public class NoticeMessageServiceImpl extends ServiceImpl<NoticeMessageMapper, N
         userFriendRelateService.saveBatch(userFriendRelates);
 
     }
+
+
     private UserFriendRelate createUserFriendRelate(Long userId, Long friendId, Integer relateType) {
         UserFriendRelate relate = new UserFriendRelate();
         relate.setUserId(userId);

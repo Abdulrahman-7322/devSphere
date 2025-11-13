@@ -8,24 +8,33 @@
     <name>shutu-admin-client</name>
     <description>shutu-admin-client</description>
 
-
     <parent>
         <groupId>com.shutu</groupId>
         <artifactId>shutu-admin</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <groupId>com.shutu</groupId>
+            <artifactId>shutu-commons-security</artifactId>
+            <scope>provided</scope>
         </dependency>
-
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.shutu</groupId>
+            <artifactId>shutu-commons-swagger</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.shutu</groupId>
+            <artifactId>shutu-commons-tools</artifactId>
         </dependency>
     </dependencies>
 

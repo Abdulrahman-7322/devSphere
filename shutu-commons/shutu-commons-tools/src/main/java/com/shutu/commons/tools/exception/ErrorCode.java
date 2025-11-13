@@ -31,4 +31,5 @@ public interface ErrorCode {
     int SUPERIOR_REGION_ERROR = 10017;
     int REGION_SUB_DELETE_ERROR = 10018;
 
+    int GROUP_NOT_FOUND = 20100;
 }

@@ -38,6 +38,7 @@ public class NoticeMessageController {
         return new Result<Boolean>().ok(true);
     }
 
+
     /**
      * 连接
      * 用户SSE连接
@@ -46,12 +47,13 @@ public class NoticeMessageController {
      * @return {@link SseEmitter}
      */
     @GetMapping("/userConnect")
-    public SseEmitter connect(String token) {
+    public SseEmitter connect() {
         //一般取登录用户账号作为 messageId。分组的话需要约定 messageId的格式。
         UserDetail user = SecurityUser.getUser();
         String userId = USER_KEY + user.getId();
         return SseServer.createConnect(userId);
     }
+
 
     /**
      * 获取消息数量

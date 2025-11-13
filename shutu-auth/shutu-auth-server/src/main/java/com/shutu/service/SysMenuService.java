@@ -1,7 +1,8 @@
 package com.shutu.service;
+
 import com.shutu.commons.security.user.UserDetail;
-import com.shutu.domain.dto.SysMenuDTO;
-import com.shutu.domain.entity.SysMenuEntity;
+import com.shutu.model.dto.SysMenuDTO;
+import com.shutu.model.entity.SysMenuEntity;
 import com.shutu.commons.mybatis.service.BaseService;
 
 import java.util.List;
@@ -9,9 +10,7 @@ import java.util.Set;
 
 /**
  * 菜单管理
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+ 
  */
 public interface SysMenuService extends BaseService<SysMenuEntity> {
 

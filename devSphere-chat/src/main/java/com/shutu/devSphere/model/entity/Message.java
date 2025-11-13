@@ -15,7 +15,7 @@ import java.util.Date;
 /**
  * 消息表
  */
-@TableName(value ="message")
+@TableName(value ="dev_sphere_message")
 @Data
 @Builder
 @AllArgsConstructor

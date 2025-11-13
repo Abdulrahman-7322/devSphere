@@ -1,6 +1,7 @@
 package com.shutu.service;
-import com.shutu.domain.dto.SysDeptDTO;
-import com.shutu.domain.entity.SysDeptEntity;
+
+import com.shutu.model.dto.SysDeptDTO;
+import com.shutu.model.entity.SysDeptEntity;
 import com.shutu.commons.mybatis.service.BaseService;
 import java.util.List;
 import java.util.Map;

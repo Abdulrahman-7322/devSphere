@@ -1,14 +1,13 @@
 package com.shutu.service;
-import com.shutu.domain.entity.SysRoleMenuEntity;
+
+import com.shutu.model.entity.SysRoleMenuEntity;
 import com.shutu.commons.mybatis.service.BaseService;
 
 import java.util.List;
 
 /**
  * 角色菜单关系
- *
- * @author Mark sunlightcs@gmail.com
- * @since 1.0.0
+ 
  */
 public interface SysRoleMenuService extends BaseService<SysRoleMenuEntity> {
 

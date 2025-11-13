@@ -11,7 +11,7 @@ package com.shutu.enums;
 /**
  * 通知阅读状态枚举
  *
- * @author Mark sunlightcs@gmail.com
+ * @author jiujingz@126.com
  */
 public enum NoticeReadStatusEnum {
     /**

@@ -1,14 +1,12 @@
 package com.shutu.service;
 
-import com.shutu.domain.entity.SysUserPostEntity;
+import com.shutu.model.entity.SysUserPostEntity;
 import com.shutu.commons.mybatis.service.BaseService;
 
 import java.util.List;
 
 /**
  * 用户岗位关系
- *
- * @author Mark sunlightcs@gmail.com
  */
 public interface SysUserPostService extends BaseService<SysUserPostEntity> {
 
