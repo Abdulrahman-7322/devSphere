@@ -1,10 +1,9 @@
-
-
 package io.shutu.email;
 
 import cn.hutool.core.map.MapUtil;
 import com.shutu.commons.tools.constant.Constant;
 import com.shutu.commons.tools.exception.CommonException;
+import com.shutu.remote.ParamsRemoteService;
 import freemarker.template.Template;
 import io.shutu.dao.SysMailTemplateDao;
 import io.shutu.entity.SysMailTemplateEntity;

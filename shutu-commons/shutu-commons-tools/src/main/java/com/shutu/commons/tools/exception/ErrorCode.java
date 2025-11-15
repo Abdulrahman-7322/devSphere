@@ -32,4 +32,5 @@ public interface ErrorCode {
     int REGION_SUB_DELETE_ERROR = 10018;
 
     int GROUP_NOT_FOUND = 20100;
+    int BAD_REQUEST = 20400;
 }

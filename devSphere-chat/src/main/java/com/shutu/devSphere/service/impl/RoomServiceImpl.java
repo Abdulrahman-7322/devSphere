@@ -11,6 +11,7 @@ import com.shutu.commons.tools.utils.Result;
 import com.shutu.devSphere.manager.FriendSearchStrategy;
 import com.shutu.devSphere.model.dto.chat.GroupCreateRequestDTO;
 import com.shutu.devSphere.model.dto.group.GroupUpdateRequestDTO;
+import com.shutu.devSphere.model.enums.chat.MessageTypeEnum;
 import com.shutu.devSphere.model.vo.group.GroupDetailVo;
 import com.shutu.devSphere.model.vo.group.GroupMemberVo;
 import com.shutu.dto.SysUserDTO;
@@ -101,6 +102,27 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
             // 设置会话最后更新时间
             roomVo.setActiveTime(item.getActiveTime());
             roomVo.setType(item.getType());
+
+        // 计算未读消息数量
+        // 找到用户最后一次读的消息
+        UserRoomRelate userRoomRelate = userRoomRelateList.stream()
+                .filter(relate -> relate.getRoomId().equals(item.getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (userRoomRelate != null && userRoomRelate.getLatestReadMsgId() != null) {
+            // 统计自上次已读消息后的消息数量
+            Long readMsgId = userRoomRelate.getLatestReadMsgId();
+            long unreadCount = messageService.count(new LambdaQueryWrapper<Message>()
+                    .eq(Message::getRoomId, item.getId())
+                    .gt(Message::getId, readMsgId));
+            roomVo.setUnreadNum((int) unreadCount);
+        } else {
+            // 若无已读位置或为首次阅读，所有消息均为未读状态
+            long totalMessages = messageService.count(new LambdaQueryWrapper<Message>()
+                    .eq(Message::getRoomId, item.getId()));
+            roomVo.setUnreadNum((int) totalMessages);
+        }
 
             //判断房间类型
             if (Objects.equals(item.getType(), RoomTypeEnum.GROUP.getType())) {
@@ -260,6 +282,12 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
 
     /**
      * 创建群聊
+     * 1. 创建 Room (房间)
+     * 2. 创建 RoomGroup (群详情)
+     * 3. 批量插入 UserRoomRelate (成员进入房间)
+     * 4. 批量插入 UserFriendRelate (成员的联系人列表出现群聊)
+     * 5. 发送系统消息
+     * 6. 回填 Room 活跃状态
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -273,50 +301,59 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
             memberIds.add(ownerId);
         }
 
-        // 2. 创建房间
+        // 2. 创建房间 (dev_sphere_room)
         Room room = new Room();
-        room.setType(RoomTypeEnum.GROUP.getType());
+        room.setType(RoomTypeEnum.GROUP.getType()); // 1=群聊
         room.setHotFlag(0); // 默认非热门
-        // activeTime 和 lastMsgId 先不设置，等待创建初始消息后再更新
         this.save(room);
         Long newRoomId = room.getId();
 
-        // 3. 创建群聊详情
+        // 3. 创建群聊详情 (room_group)
         RoomGroup group = new RoomGroup();
         group.setRoomId(newRoomId);
         group.setOwnerId(ownerId);
         group.setName(dto.getName());
-        // 自动生成一个默认头像
         group.setAvatar("https://api.dicebear.com/7.x/identicon/svg?seed=" + dto.getName());
         roomGroupService.save(group);
 
-        // 4. 批量插入群成员
+        // 4. 批量插入群成员 (user_room_relate) - 负责“进入房间”
         List<UserRoomRelate> relates = memberIds.stream()
                 .map(userId -> {
                     UserRoomRelate relate = new UserRoomRelate();
                     relate.setUserId(userId);
                     relate.setRoomId(newRoomId);
-                    // createTime 和 updateTime 会自动填充
                     return relate;
                 })
                 .collect(Collectors.toList());
         userRoomRelateService.saveBatch(relates);
 
-        // 5. 发送一条系统消息
+        // 4.5 批量插入群聊关系 (user_friend_relate) - 负责“联系人列表显示”
+        List<UserFriendRelate> friendRelates = memberIds.stream()
+                .map(userId -> {
+                    UserFriendRelate friendRelate = new UserFriendRelate();
+                    friendRelate.setUserId(userId);
+                    friendRelate.setRelateId(newRoomId); // 关系ID存的是 RoomID
+                    friendRelate.setRelateType(RoomTypeEnum.GROUP.getType()); // 1 = 群聊
+                    return friendRelate;
+                })
+                .collect(Collectors.toList());
+        userFriendRelateService.saveBatch(friendRelates);
+
+        // 5. 发送一条系统消息 (dev_sphere_message)
         Message initialMessage = new Message();
         initialMessage.setRoomId(newRoomId);
-        initialMessage.setFromUid(ownerId); // 系统消息，也可以用 0 或 ownerId
+        initialMessage.setFromUid(ownerId); // 用群主身份发送
         initialMessage.setContent(ownerName + " 创建了群聊");
-        initialMessage.setType(1); // 1 = 正常文本 (未来可以设为 100=系统通知)
+        initialMessage.setType(MessageTypeEnum.TEXT.getType()); // 1 = 正常文本
         messageService.save(initialMessage);
 
         // 6. 回填房间的最后活跃时间和消息ID
-        // 确保 `messageService.save` 后 initialMessage 能拿到 ID 和 createTime
+        // (确保 messageService.save 后 initialMessage 能拿到 ID 和 createTime)
         room.setLastMsgId(initialMessage.getId());
         room.setActiveTime(initialMessage.getCreateTime());
         this.updateById(room);
 
-        // 7. 构造 RoomVo 返回给前端
+        // 7. 构造 RoomVo 返回给前端 (保持不变)
         RoomVo newRoomVo = new RoomVo();
         newRoomVo.setId(newRoomId);
         newRoomVo.setType(RoomTypeEnum.GROUP.getType());
@@ -324,7 +361,7 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
         newRoomVo.setRoomName(group.getName());
         newRoomVo.setContent(initialMessage.getContent());
         newRoomVo.setActiveTime(initialMessage.getCreateTime());
-        newRoomVo.setUnreadNum(0); // 新创建的群，对自己而言没有未读
+        newRoomVo.setUnreadNum(0);
         newRoomVo.setUserId(ownerId); // 群聊时 userId 代表群主ID
 
         return newRoomVo;

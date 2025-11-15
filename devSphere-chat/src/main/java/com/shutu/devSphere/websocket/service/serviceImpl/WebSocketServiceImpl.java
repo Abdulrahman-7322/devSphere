@@ -27,6 +27,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -95,13 +96,18 @@ public class WebSocketServiceImpl implements WebSocketService {
      */
     @Override
     public void sendToAllOnline(WSBaseResp<?> wsBaseResp, Long skipUid) {
-
+        ONLINE_WS_MAP.forEach((channel, uid) -> {
+            if (skipUid != null && Objects.equals(uid, skipUid)) {
+                return; // 跳过指定用户
+            }
+            threadPoolTaskExecutor.execute(() -> sendMsg(channel, wsBaseResp));
+        });
     }
 
 
     @Override
     public void sendToAllOnline(WSBaseResp<?> wsBaseResp) {
-
+        sendToAllOnline(wsBaseResp, null);
     }
 
 
@@ -117,6 +123,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             log.info("用户：{}不在线", uid);
             return;
         }
+        // 推送给该用户的所有在线设备
         channels.forEach(channel -> threadPoolTaskExecutor.execute(() -> sendMsg(channel, wsBaseResp)));
     }
 
@@ -131,6 +138,7 @@ public class WebSocketServiceImpl implements WebSocketService {
         String msg = req.getData();
         ChatMessageVo chatMessage = JSONUtil.toBean(msg, ChatMessageVo.class);
         RoomTypeEnum messageTypeEnum = RoomTypeEnum.of(chatMessage.getType());
+
         switch (messageTypeEnum) {
             case PRIVATE:
                 // 私聊
@@ -141,7 +149,7 @@ public class WebSocketServiceImpl implements WebSocketService {
                 privateMessageDTO.setContent(chatMessage.getContent());
                 applicationEventPublisher.publishEvent(new PrivateMessageEvent(this,privateMessageDTO));
                 // 2 判断该用户是否在线，在线则直接推送信息
-                if (ONLINE_UID_MAP.contains(req.getUserId())){
+                if (ONLINE_UID_MAP.containsKey(req.getUserId())){
                     // 用户在线，向多端发送实时信息
                     WSBaseResp<ChatMessageResp> wsBaseResp = wsAdapter.buildPrivateMessageResp(privateMessageDTO);
                     CopyOnWriteArrayList<Channel> channels = ONLINE_UID_MAP.get(req.getUserId());

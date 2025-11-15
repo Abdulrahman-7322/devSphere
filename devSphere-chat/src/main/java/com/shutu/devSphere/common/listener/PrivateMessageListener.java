@@ -1,16 +1,19 @@
 package com.shutu.devSphere.common.listener;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.shutu.devSphere.common.event.PrivateMessageEvent;
 import com.shutu.devSphere.model.dto.ws.PrivateMessageDTO;
 import com.shutu.devSphere.model.entity.Message;
 import com.shutu.devSphere.model.entity.Room;
 import com.shutu.devSphere.model.entity.RoomFriend;
+import com.shutu.devSphere.model.entity.UserRoomRelate;
 import com.shutu.devSphere.model.enums.chat.MessageStatusEnum;
 import com.shutu.devSphere.model.enums.chat.MessageTypeEnum;
 import com.shutu.devSphere.service.MessageService;
 import com.shutu.devSphere.service.RoomFriendService;
 import com.shutu.devSphere.service.RoomService;
+import com.shutu.devSphere.service.UserRoomRelateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -26,6 +29,7 @@ public class PrivateMessageListener {
     private final MessageService messageService;
     private final RoomService roomService;
     private final RoomFriendService roomFriendService;
+    private final UserRoomRelateService userRoomRelateService;
 
     /**
      * 监听私聊消息，保存至数据库
@@ -74,7 +78,15 @@ public class PrivateMessageListener {
             // 3. 保存消息
             messageService.save(message);
 
-            // 4. 更新会话表的最后活跃信息
+            // 4.更新发送者的最新已读消息
+            userRoomRelateService.update(
+                    new LambdaUpdateWrapper<UserRoomRelate>()
+                            .eq(UserRoomRelate::getUserId, message.getFromUid()) // 发送人
+                            .eq(UserRoomRelate::getRoomId, message.getRoomId()) // 该房间
+                            .set(UserRoomRelate::getLatestReadMsgId, message.getId()) // 更新为刚发送的消息ID
+            );
+
+            // 5. 更新会话表的最后活跃信息
             Room room = new Room();
             room.setId(roomId);
             room.setLastMsgId(message.getId());

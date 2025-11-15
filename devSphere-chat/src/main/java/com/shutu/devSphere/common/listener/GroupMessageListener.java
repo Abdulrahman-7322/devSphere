@@ -1,13 +1,16 @@
 package com.shutu.devSphere.common.listener;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.shutu.devSphere.common.event.GroupMessageEvent;
 import com.shutu.devSphere.model.dto.ws.GroupMessageDTO;
 import com.shutu.devSphere.model.entity.Message;
 import com.shutu.devSphere.model.entity.Room;
+import com.shutu.devSphere.model.entity.UserRoomRelate;
 import com.shutu.devSphere.model.enums.chat.MessageStatusEnum;
 import com.shutu.devSphere.model.enums.chat.MessageTypeEnum;
 import com.shutu.devSphere.service.MessageService;
 import com.shutu.devSphere.service.RoomService;
+import com.shutu.devSphere.service.UserRoomRelateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -23,6 +26,7 @@ public class GroupMessageListener {
 
     private final MessageService messageService;
     private final RoomService roomService;
+    private final UserRoomRelateService userRoomRelateService;
 
     /**
      * 监听群聊消息，异步保存至数据库
@@ -49,7 +53,15 @@ public class GroupMessageListener {
             // 确保 save 方法执行后，message 对象会被回填 ID 和 createTime
             messageService.save(message);
 
-            // 3. 更新会话表的最后活跃信息
+            // 3.更新发送者的最新已读消息
+            userRoomRelateService.update(
+                    new LambdaUpdateWrapper<UserRoomRelate>()
+                            .eq(UserRoomRelate::getUserId, message.getFromUid()) // 发送人
+                            .eq(UserRoomRelate::getRoomId, message.getRoomId()) // 该房间
+                            .set(UserRoomRelate::getLatestReadMsgId, message.getId()) // 更新为刚发送的消息ID
+            );
+
+            // 4. 更新会话表的最后活跃信息
             Room room = new Room();
             room.setId(groupMessageDTO.getToRoomId());
             room.setLastMsgId(message.getId());

@@ -36,6 +36,11 @@ public class UserFriendRelate implements Serializable {
     private Integer relateType;
 
     /**
+     * 备注
+     */
+    private String remark;
+
+    /**
      * 创建时间
      */
     private Date createTime;

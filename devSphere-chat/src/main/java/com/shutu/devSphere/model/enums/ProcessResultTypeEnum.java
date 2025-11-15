@@ -1,22 +1,22 @@
-package com.shutu.devSphere.model.enums;
+package com.shutu.devSphere.model.enums; // 确保包名正确
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Description: 处理结果类型
+ * Description: 通知消息的处理结果类型
  */
 @AllArgsConstructor
 @Getter
 public enum ProcessResultTypeEnum {
-    AGREE (1, "已同意"),
-    REFUSE(2, "已拒绝"),
-    ;
+
+    PENDING(0, "待处理"),
+    AGREE(1, "已同意"),
+    REFUSE(2, "已拒绝");
 
     private final Integer type;
     private final String desc;

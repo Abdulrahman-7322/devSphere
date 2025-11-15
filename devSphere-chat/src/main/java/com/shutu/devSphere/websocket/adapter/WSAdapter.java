@@ -7,6 +7,7 @@ import com.shutu.commons.security.user.UserDetail;
 import com.shutu.commons.tools.utils.Result;
 import com.shutu.devSphere.model.dto.ws.GroupMessageDTO;
 import com.shutu.devSphere.model.dto.ws.PrivateMessageDTO;
+import com.shutu.devSphere.model.entity.Message;
 import com.shutu.devSphere.model.entity.RoomFriend;
 import com.shutu.devSphere.model.enums.ws.WSReqTypeEnum;
 import com.shutu.devSphere.model.vo.ws.response.ChatMessageResp;
@@ -16,6 +17,8 @@ import com.shutu.feign.UserFeignClient;
 import jakarta.annotation.Resource;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
+
+import java.util.Date;
 
 
 /**
@@ -40,11 +43,13 @@ public class WSAdapter {
      * @return
      */
     public WSBaseResp<ChatMessageResp> buildPrivateMessageResp(PrivateMessageDTO privateMessageDTO) {
-        // 获取私信的发送者
         Long loginUserId = privateMessageDTO.getFromUserId();
-        //发送信息
-        String content = privateMessageDTO.getContent();
-        ChatMessageResp chatMessageResp = getMessageVo(loginUserId, content);
+        Message message = new Message();
+        message.setFromUid(loginUserId);// 设置信息的发送者
+        message.setContent(privateMessageDTO.getContent());
+        message.setCreateTime(new Date());
+        ChatMessageResp chatMessageResp = getMessageVo(message);
+
         // 创建WSBaseResp对象
         WSBaseResp<ChatMessageResp> wsBaseResp = new WSBaseResp<>();
         // 设置房间ID （好友私聊房间）
@@ -68,11 +73,13 @@ public class WSAdapter {
      * @return
      */
     public WSBaseResp<ChatMessageResp> buildGroupMessageResp(GroupMessageDTO groupMessageDTO) {
-        // 获取私信的发送者
-        Long loginUserId = groupMessageDTO.getFromUserId();
-        //发送信息
-        String content = groupMessageDTO.getContent();
-        ChatMessageResp chatMessageResp = getMessageVo(loginUserId, content);
+        Message message = new Message();
+        message.setRoomId(groupMessageDTO.getToRoomId());
+        message.setFromUid(groupMessageDTO.getFromUserId());// 设置信息的发送者
+        message.setContent(groupMessageDTO.getContent());
+        message.setCreateTime(new Date());
+        ChatMessageResp chatMessageResp = getMessageVo(message);
+
         // 创建WSBaseResp对象
         WSBaseResp<ChatMessageResp> wsBaseResp = new WSBaseResp<>();
         // 设置房间ID
@@ -90,11 +97,11 @@ public class WSAdapter {
      * @return ChatMessageResp
      */
     @NotNull
-    public ChatMessageResp getMessageVo(Long UserId, String content) {
+    public ChatMessageResp getMessageVo(Message message) {
         // 创建ChatMessageResp对象
         ChatMessageResp chatMessageResp = new ChatMessageResp();
         // 获取登录用户的信息
-        Result<UserDetail> result = userFeignClient.getById(UserId);
+        Result<UserDetail> result = userFeignClient.getById(message.getFromUid());
         UserDetail user = result.getData();
         // 创建UserInfo对象
         ChatMessageResp.UserInfo userInfo = new ChatMessageResp.UserInfo();
@@ -105,11 +112,12 @@ public class WSAdapter {
         // 和发送者信息
         chatMessageResp.setFromUser(userInfo);
         // 创建Message对象
-        ChatMessageResp.Message message = new ChatMessageResp.Message();
+        ChatMessageResp.Message messageVO = new ChatMessageResp.Message();
         // 设置私信内容
-        message.setContent(content);
+        messageVO.setContent(message.getContent());
+        messageVO.setSendTime(message.getCreateTime());
         // 设置消息对象
-        chatMessageResp.setMessage(message);
+        chatMessageResp.setMessage(messageVO);
 
         return chatMessageResp;
     }
