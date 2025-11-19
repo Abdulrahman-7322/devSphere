@@ -31,7 +31,7 @@ public class SseServer {
     private static final AtomicInteger CURRENT_CONNECT_TOTAL = new AtomicInteger(0);
 
     /**
-     * messageId的 SseEmitter对象映射集
+     * [FIXED] userId的 SseEmitter对象映射集
      */
     private static final Map<String, SseEmitter> SSE_EMITTER_MAP = new ConcurrentHashMap<>();
 
@@ -39,10 +39,10 @@ public class SseServer {
     /**
      * 创建sse连接
      *
-     * @param messageId - 消息id（唯一）
+     * @param userId - 用户id（唯一）
      * @return {@link SseEmitter}
      */
-    public static SseEmitter createConnect(String messageId) {
+    public static SseEmitter createConnect(String userId) {
         //设置连接超时时间。0表示不过期，默认是30秒，超过时间未完成会抛出异常
         SseEmitter sseEmitter = new SseEmitter(0L);
         try {
@@ -52,80 +52,81 @@ public class SseServer {
                     //.data("前端重连成功") // 重连成功的提示信息
             );
         } catch (IOException e) {
-            log.error("前端重连异常 ==> messageId={}, 异常信息：{}", messageId, e.getMessage());
+            log.error("SSE 前端重连异常 ==> userId={}, 异常信息：{}", userId, e.getMessage());
         }
         // 注册回调
-        sseEmitter.onCompletion(completionCallBack(messageId));
-        sseEmitter.onTimeout(timeOutCallBack(messageId));
-        sseEmitter.onError(errorCallBack(messageId));
-        SSE_EMITTER_MAP.put(messageId, sseEmitter);
+        sseEmitter.onCompletion(completionCallBack(userId));
+        sseEmitter.onTimeout(timeOutCallBack(userId));
+        sseEmitter.onError(errorCallBack(userId));
+        SSE_EMITTER_MAP.put(userId, sseEmitter);
 
         //记录一下连接总数。数量+1
         int count = CURRENT_CONNECT_TOTAL.incrementAndGet();
-        log.info("创建sse连接成功 ==> 当前连接总数={}， messageId={}", count, messageId);
+        log.info("创建SSE连接成功 ==> 当前连接总数={}， userId={}", count, userId);
         return sseEmitter;
     }
 
 
-    public static boolean containUser(String messageId) {
-        return SSE_EMITTER_MAP.containsKey(messageId);
+    public static boolean containUser(String userId) {
+        return SSE_EMITTER_MAP.containsKey(userId);
     }
 
     /**
-     * 给指定 messageId发消息
+     * 给指定 userId 发消息
      *
-     * @param messageId - 消息id（唯一）
+     * @param userId - 用户id（唯一）
      * @param message   - 消息文本
      */
-    public static void sendMessage(String messageId, String message) {
-        if (SSE_EMITTER_MAP.containsKey(messageId)) {
+    public static void sendMessage(String userId, String message) {
+        if (SSE_EMITTER_MAP.containsKey(userId)) {
             try {
-                SSE_EMITTER_MAP.get(messageId).send(message);
+                SSE_EMITTER_MAP.get(userId).send(message);
             } catch (IOException e) {
-                log.error("发送消息异常 ==> messageId={}, 异常信息：{}", messageId, e.getMessage());
+                log.error("SSE 发送消息异常 ==> userId={}, 异常信息：{}", userId, e.getMessage());
             }
         } else {
-            throw new CommonException("连接不存在或者超时， messageId=" + messageId, ErrorCode.INTERNAL_SERVER_ERROR);
+            log.warn("SSE 发送消息失败，连接不存在或者超时， userId={}", userId);
+            // throw new CommonException("连接不存在或者超时， userId=" + userId, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
     /**
      * 批量全部发送消息
-     * 给所有 messageId广播发送消息
+     * 给所有 userId 广播发送消息
      *
      * @param message 消息
      */
     public static void batchAllSendMessage(String message) {
-        SSE_EMITTER_MAP.forEach((messageId, sseEmitter) -> {
+        SSE_EMITTER_MAP.forEach((userId, sseEmitter) -> {
             try {
                 sseEmitter.send(message, MediaType.APPLICATION_JSON);
             } catch (IOException e) {
-                log.error("广播发送消息异常 ==> messageId={}, 异常信息：{}", messageId, e.getMessage());
-                removeMessageId(messageId);
+                log.error("SSE 广播发送消息异常 ==> userId={}, 异常信息：{}", userId, e.getMessage());
+                removeUserId(userId);
             }
         });
     }
 
     /**
      * 批量发送消息
-     * 给指定 messageId集合群发消息
+     * 给指定 userId 集合群发消息
      *
-     * @param messageIds 消息 ID
+     * @param userIds 用户 ID 列表
      * @param message    消息
      */
-    public static void batchSendMessage(List<String> messageIds, String message) {
-        if (CollectionUtils.isEmpty(messageIds)) {
+    public static void batchSendMessage(List<String> userIds, String message) {
+        if (CollectionUtils.isEmpty(userIds)) {
             return;
         }
         // 去重
-        messageIds = messageIds.stream().distinct().collect(Collectors.toList());
-        messageIds.forEach(userId -> sendMessage(userId, message));
+        userIds = userIds.stream().distinct().collect(Collectors.toList());
+        userIds.forEach(userId -> sendMessage(userId, message));
     }
 
 
     /**
      * 群发消息
-     * 给指定组群发消息（即组播，我们让 messageId满足我们的组命名确定即可）
+     * 给指定组群发消息（即组播，我们让 userId 满足我们的组命名确定即可）
      *
      * @param groupId 组 ID
      * @param message 消息
@@ -134,39 +135,37 @@ public class SseServer {
         if (MapUtil.isEmpty(SSE_EMITTER_MAP)) {
             return;
         }
-        SSE_EMITTER_MAP.forEach((messageId, sseEmitter) -> {
+        SSE_EMITTER_MAP.forEach((userId, sseEmitter) -> {
             try {
-                // 这里 groupId作为前缀
-                if (messageId.startsWith(groupId)) {
+                // 这里 groupId 作为前缀
+                if (userId.startsWith(groupId)) {
                     sseEmitter.send(message, MediaType.APPLICATION_JSON);
                 }
             } catch (IOException e) {
-                log.error("组播发送消息异常 ==> groupId={}, 异常信息：{}", groupId, e.getMessage());
-                removeMessageId(messageId);
+                log.error("SSE 组播发送消息异常 ==> groupId={}, 异常信息：{}", groupId, e.getMessage());
+                removeUserId(userId);
             }
         });
     }
 
     /**
-     * 删除邮件 ID
-     * 移除 MessageId
+     * [FIXED] 移除 UserId
      *
-     * @param messageId 消息 ID
+     * @param userId 用户 ID
      */
-    public static void removeMessageId(String messageId) {
-        SSE_EMITTER_MAP.remove(messageId);
+    public static void removeUserId(String userId) {
+        SSE_EMITTER_MAP.remove(userId);
         //数量-1
         CURRENT_CONNECT_TOTAL.getAndDecrement();
-        log.info("remove messageId={}", messageId);
+        log.info("SSE remove userId={}", userId);
     }
 
     /**
-     * 获取消息 ID
-     * 获取所有的 MessageId集合
+     * [FIXED] 获取所有的 UserId 集合
      *
      * @return {@link List}<{@link String}>
      */
-    public static List<String> getMessageIds() {
+    public static List<String> getUserIds() {
         return new ArrayList<>(SSE_EMITTER_MAP.keySet());
     }
 
@@ -183,13 +182,13 @@ public class SseServer {
      * 完成回拨
      * 断开SSE连接时的回调
      *
-     * @param messageId 消息 ID
+     * @param userId 用户 ID
      * @return {@link Runnable}
      */
-    private static Runnable completionCallBack(String messageId) {
+    private static Runnable completionCallBack(String userId) {
         return () -> {
-            log.info("结束连接 ==> messageId={}", messageId);
-            removeMessageId(messageId);
+            log.info("SSE 结束连接 ==> userId={}", userId);
+            removeUserId(userId);
         };
     }
 
@@ -197,13 +196,13 @@ public class SseServer {
      * 超时回拨
      * 连接超时时回调触发
      *
-     * @param messageId 消息 ID
+     * @param userId 用户 ID
      * @return {@link Runnable}
      */
-    private static Runnable timeOutCallBack(String messageId) {
+    private static Runnable timeOutCallBack(String userId) {
         return () -> {
-            log.info("连接超时 ==> messageId={}", messageId);
-            removeMessageId(messageId);
+            log.info("SSE 连接超时 ==> userId={}", userId);
+            removeUserId(userId);
         };
     }
 
@@ -211,13 +210,13 @@ public class SseServer {
      * 错误回调
      * 连接报错时回调触发。
      *
-     * @param messageId 消息 ID
+     * @param userId 用户 ID
      * @return {@link Consumer}<{@link Throwable}>
      */
-    private static Consumer<Throwable> errorCallBack(String messageId) {
+    private static Consumer<Throwable> errorCallBack(String userId) {
         return throwable -> {
-            log.error("连接异常 ==> messageId={}", messageId);
-            removeMessageId(messageId);
+            log.error("SSE 连接异常 ==> userId={}", userId);
+            removeUserId(userId);
         };
     }
 }

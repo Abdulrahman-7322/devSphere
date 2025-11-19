@@ -14,11 +14,14 @@ import com.shutu.devSphere.model.vo.ws.response.ChatMessageResp;
 import com.shutu.devSphere.model.vo.ws.response.WSBaseResp;
 import com.shutu.devSphere.service.RoomFriendService;
 import com.shutu.feign.UserFeignClient;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import jakarta.annotation.Resource;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 
 /**

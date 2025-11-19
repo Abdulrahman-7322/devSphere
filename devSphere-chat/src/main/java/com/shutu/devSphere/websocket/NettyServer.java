@@ -62,8 +62,8 @@ public class NettyServer {
                     protected void initChannel(SocketChannel channel) {
                         ChannelPipeline pipeline = channel.pipeline();
                         pipeline.addLast(new LoggingHandler("DEBUG_LOGGER", LogLevel.INFO));
-                        // 如果 30 秒内没有收到客户端的任何数据（读空闲），会触发一个 IdleStateEvent 事件。
-                        pipeline.addLast(new IdleStateHandler(30,0,0));
+                        // 如果 50 秒内没有收到客户端的任何数据（读空闲），会触发一个 IdleStateEvent 事件。
+                        pipeline.addLast(new IdleStateHandler(50,0,0));
                         pipeline.addLast(new HttpServerCodec());
                         // 支持异步发送大数据流
                         pipeline.addLast(new ChunkedWriteHandler());

@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
-
 import static com.shutu.commons.tools.constant.Constant.USER_KEY;
 
 /**
