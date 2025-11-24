@@ -47,12 +47,6 @@ public class OssController {
     private OssService ossService;
     @Resource
     private ParamsRemoteService paramsRemoteService;
-    @Value("${app.backend.ip}")
-    private String BACKEND_IP;
-
-    @Value("${app.minio.domain.name}")
-    private String DOMAIN_NAME;
-
 
     private final static String KEY = ModuleConstant.CLOUD_STORAGE_CONFIG_KEY;
 
@@ -93,17 +87,6 @@ public class OssController {
         //校验类型
         ValidatorUtils.validateEntity(config);
 
-        if (config.getType() == OssTypeEnum.QINIU.value()) {
-            //校验七牛数据
-            ValidatorUtils.validateEntity(config, QiniuGroup.class);
-        } else if (config.getType() == OssTypeEnum.ALIYUN.value()) {
-            //校验阿里云数据
-            ValidatorUtils.validateEntity(config, AliyunGroup.class);
-        } else if (config.getType() == OssTypeEnum.QCLOUD.value()) {
-            //校验腾讯云数据
-            ValidatorUtils.validateEntity(config, QcloudGroup.class);
-        }
-
         paramsRemoteService.updateValueByCode(KEY, JsonUtils.toJsonString(config));
 
         return new Result();
@@ -120,17 +103,16 @@ public class OssController {
         String extension = FilenameUtils.getExtension(file.getOriginalFilename());
 
         String url = OssFactory.build().uploadSuffix(file.getBytes(), extension);
-        String newUrl = url.replace(BACKEND_IP, DOMAIN_NAME).replaceFirst("https", "http").replaceFirst("http","https").replaceFirst(":9000","");
 
         //保存文件信息
         OssEntity ossEntity = new OssEntity();
-        ossEntity.setUrl(newUrl);
+        ossEntity.setUrl(url);
         ossEntity.setCreateDate(new Date());
         ossService.insert(ossEntity);
 
         //文件信息
         UploadDTO dto = new UploadDTO();
-        dto.setUrl(newUrl);
+        dto.setUrl(url);
         dto.setSize(file.getSize());
 
         return new Result<UploadDTO>().ok(dto);

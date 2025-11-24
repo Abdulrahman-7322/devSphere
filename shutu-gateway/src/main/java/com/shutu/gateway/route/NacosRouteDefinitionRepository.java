@@ -1,6 +1,4 @@
-
 package com.shutu.gateway.route;
-
 import com.alibaba.cloud.nacos.NacosConfigManager;
 import com.alibaba.cloud.nacos.NacosConfigProperties;
 import com.alibaba.nacos.api.config.listener.Listener;
@@ -18,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -40,11 +37,32 @@ public class NacosRouteDefinitionRepository implements RouteDefinitionRepository
      */
     private static final String DATA_ID = "gateway.json";
 
-    public NacosRouteDefinitionRepository(ApplicationEventPublisher publisher, NacosConfigProperties nacosConfigProperties) {
+    // 本地路由缓存
+    private List<RouteDefinition> routeDefinitionList = new ArrayList<>();
+
+    public NacosRouteDefinitionRepository(ApplicationEventPublisher publisher,
+            NacosConfigProperties nacosConfigProperties) {
         this.publisher = publisher;
         this.nacosConfigProperties = nacosConfigProperties;
         this.nacosConfigManager = new NacosConfigManager(nacosConfigProperties);
+
+        // 初始化加载配置
+        initConfig();
+        // 注册监听器
         nacosListener();
+    }
+
+    /**
+     * 初始化加载配置
+     */
+    private void initConfig() {
+        try {
+            String routeConfig = nacosConfigManager.getConfigService()
+                    .getConfig(DATA_ID, nacosConfigProperties.getGroup(), 3000);
+            refreshRoutes(routeConfig);
+        } catch (NacosException e) {
+            log.error("Init Nacos Config error", e);
+        }
     }
 
     /**
@@ -52,41 +70,49 @@ public class NacosRouteDefinitionRepository implements RouteDefinitionRepository
      */
     private void nacosListener() {
         try {
-            nacosConfigManager.getConfigService().addListener(DATA_ID, nacosConfigProperties.getGroup(), new Listener() {
-                @Override
-                public Executor getExecutor() {
-                    return null;
-                }
+            nacosConfigManager.getConfigService().addListener(DATA_ID, nacosConfigProperties.getGroup(),
+                    new Listener() {
+                        @Override
+                        public Executor getExecutor() {
+                            return null;
+                        }
 
-                @Override
-                public void receiveConfigInfo(String configInfo) {
-                    publisher.publishEvent(new RefreshRoutesEvent(this));
-                }
-            });
+                        @Override
+                        public void receiveConfigInfo(String configInfo) {
+                            refreshRoutes(configInfo);
+                            publisher.publishEvent(new RefreshRoutesEvent(this));
+                        }
+                    });
         } catch (NacosException e) {
             log.error("nacosListener error", e);
         }
     }
 
-    @Override
-    public Flux<RouteDefinition> getRouteDefinitions() {
+    /**
+     * 刷新路由缓存
+     */
+    private void refreshRoutes(String routeConfig) {
         try {
-            String routeConfig = nacosConfigManager.getConfigService()
-                    .getConfig(DATA_ID, nacosConfigProperties.getGroup(), 3000);
-
-            List<RouteDefinition> routeDefinitionList = new ArrayList<>();
             if (StringUtils.hasText(routeConfig)) {
                 objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                routeDefinitionList = objectMapper.readValue(routeConfig, new TypeReference<>() {
-                });
+                List<RouteDefinition> definitions = objectMapper.readValue(routeConfig,
+                        new TypeReference<List<RouteDefinition>>() {
+                        });
+                this.routeDefinitionList = definitions;
+                log.info("Updated {} routes from Nacos", definitions.size());
+            } else {
+                this.routeDefinitionList = new ArrayList<>();
+                log.warn("Nacos route config is empty");
             }
-
-            return Flux.fromIterable(routeDefinitionList);
         } catch (Exception e) {
-            log.error("getRouteDefinitions error ", e);
+            log.error("Parse route config error", e);
         }
+    }
 
-        return Flux.fromIterable(new ArrayList<>());
+    @Override
+    public Flux<RouteDefinition> getRouteDefinitions() {
+        // 直接返回本地缓存，非阻塞
+        return Flux.fromIterable(routeDefinitionList);
     }
 
     @Override

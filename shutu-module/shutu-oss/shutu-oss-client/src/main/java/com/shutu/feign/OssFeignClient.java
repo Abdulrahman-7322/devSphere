@@ -19,8 +19,6 @@ import static com.shutu.commons.tools.constant.ServiceConstant.SHUTU_OSS_SERVER;
 
 /**
  * OSS
- * @author Mark sunlightcs@gmail.c om
- * @since 1.1.0
  */
 @FeignClient(name = SHUTU_OSS_SERVER,  contextId = "OssFeignClient",fallbackFactory = OssFeignClientFallbackFactory.class, configuration = OssFeignClient.MultipartSupportConfig.class)
 public interface OssFeignClient {
