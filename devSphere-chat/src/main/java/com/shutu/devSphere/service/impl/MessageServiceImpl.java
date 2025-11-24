@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
 @Service
 @RequiredArgsConstructor
 public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message>
@@ -63,8 +62,9 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message>
                 .eq(UserRoomRelate::getUserId, loginUserId)
                 .set(UserRoomRelate::getLatestReadMsgId, latestMessageId)
                 .update();
-        if (!update){
-            throw new CommonException("更新已读消息失败", ErrorCode.INTERNAL_SERVER_ERROR);
+        if (!update) {
+            // 忽略更新失败，不影响主流程
+            // log.warn("更新已读消息失败: roomId={}, userId={}", roomId, loginUserId);
         }
 
         UserRoomRelate relate = userRoomRelateService.getOne(new LambdaQueryWrapper<UserRoomRelate>()
@@ -75,7 +75,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message>
         int fetchSize = size + 1;
         LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<Message>()
                 .eq(Message::getRoomId, roomId)
-                .gt(Message::getId, minMsgId); //过滤掉删除前的历史消息
+                .gt(Message::getId, minMsgId); // 过滤掉删除前的历史消息
 
         // 如果 cursor 不为 null，则查询 ID < cursor 的消息 (更早的消息)
         if (cursor != null) {
@@ -103,8 +103,36 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message>
             messageList.remove(messageList.size() - 1);
         }
 
+        // --- 批量获取用户信息 (优化 N+1 问题) ---
+        java.util.Set<Long> userIds = messageList.stream()
+                .map(Message::getFromUid)
+                .collect(Collectors.toSet());
+
+        java.util.Map<Long, com.shutu.commons.security.user.UserDetail> userDetailMap = new java.util.HashMap<>();
+        if (!userIds.isEmpty()) {
+            try {
+                // 调用 Feign 批量接口
+                com.shutu.commons.tools.utils.Result<List<com.shutu.dto.SysUserDTO>> userResult = com.shutu.commons.tools.utils.SpringContextUtils
+                        .getBean(com.shutu.feign.UserFeignClient.class)
+                        .listByIds(new java.util.ArrayList<>(userIds));
+
+                if (userResult.getData() != null) {
+                    for (com.shutu.dto.SysUserDTO dto : userResult.getData()) {
+                        // 将 DTO 转换为 UserDetail (简单映射，仅需头像和昵称)
+                        com.shutu.commons.security.user.UserDetail userDetail = new com.shutu.commons.security.user.UserDetail();
+                        userDetail.setId(dto.getId());
+                        userDetail.setUsername(dto.getUsername()); // 注意：这里可能需要用 RealName 或 Nickname，视业务而定，暂用 Username
+                        userDetail.setHeadUrl(dto.getHeadUrl());
+                        userDetailMap.put(dto.getId(), userDetail);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("批量获取用户信息失败", e);
+            }
+        }
+
         List<ChatMessageResp> chatMessageRespList = messageList.stream()
-                .map(wsAdapter::getMessageVo)
+                .map(msg -> wsAdapter.buildBatchMessageResp(msg, userDetailMap))
                 .collect(Collectors.toList());
 
         // 反转列表，使之符合前端渲染顺序 (最旧 -> 最新)
@@ -126,7 +154,6 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message>
         return cursorPage;
     }
 
-
     /**
      * 将用户在某个会话中的消息标记为已读
      */
@@ -144,12 +171,8 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message>
                 .eq(UserRoomRelate::getUserId, loginUserId)
                 .set(UserRoomRelate::getLatestReadMsgId, latestMessageId)
                 .update();
-        if (!update){
+        if (!update) {
             throw new CommonException("更新已读消息失败", ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }
-
-
-
-

@@ -192,7 +192,7 @@ public class WebSocketServiceImpl implements WebSocketService {
         long serverTs = System.currentTimeMillis();
         // 2. 构建 stream map
         Map<String,String> streamMessage = new HashMap<>();
-        streamMessage.put("server_msg_id ", serverMsgId );
+        streamMessage.put("server_msg_id", serverMsgId );
         streamMessage.put("tempId", tempId);
         streamMessage.put("fromUserId", String.valueOf(fromUserId));
         streamMessage.put("content", chatMessage.getContent());

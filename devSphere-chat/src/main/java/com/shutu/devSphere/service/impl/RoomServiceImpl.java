@@ -56,6 +56,7 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
 
     /**
      * 分页查询所有房间信息
+     * 
      * @param roomQueryRequest 房间查询请求
      * @return
      */
@@ -63,10 +64,10 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
     public Page<RoomVo> listRoomVoByPage(RoomQueryRequest roomQueryRequest) {
         int size = roomQueryRequest.getPageSize();
         int current = roomQueryRequest.getCurrent();
-        //当前登陆用户id
+        // 当前登陆用户id
         Long loginUserId = SecurityUser.getUserId();
 
-        //1、查询用户下的房间，后面可改为游标查询
+        // 1、查询用户下的房间
         Page<UserRoomRelate> page = userRoomRelateService.page(new Page<>(current, size),
                 new LambdaQueryWrapper<UserRoomRelate>().eq(UserRoomRelate::getUserId, loginUserId)
                         .ne(UserRoomRelate::getIsDeleted, 1)
@@ -74,97 +75,152 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
         List<UserRoomRelate> userRoomRelateList = page.getRecords();
 
         if (userRoomRelateList.isEmpty()) {
-            return new Page<>(current, size, 0); // 如果没有房间，直接返回空分页
+            return new Page<>(current, size, 0);
         }
 
-        //房间id集合
-        Map<Long, RoomVo> roomVoMap = new HashMap<>();
-        userRoomRelateList.forEach(item -> {
-            Long roomId = item.getRoomId();
+        // 收集 RoomID
+        Set<Long> roomIds = userRoomRelateList.stream()
+                .map(UserRoomRelate::getRoomId)
+                .collect(Collectors.toSet());
+
+        // 2、批量查询房间信息
+        List<Room> roomList = this.listByIds(roomIds);
+        Map<Long, Room> roomMap = roomList.stream()
+                .collect(Collectors.toMap(Room::getId, java.util.function.Function.identity()));
+
+        // 3、批量查询最后一条消息
+        Set<Long> lastMsgIds = roomList.stream()
+                .map(Room::getLastMsgId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, Message> messageMap = new HashMap<>();
+        if (!lastMsgIds.isEmpty()) {
+            List<Message> messages = messageService.listByIds(lastMsgIds);
+            messageMap = messages.stream()
+                    .collect(Collectors.toMap(Message::getId, java.util.function.Function.identity()));
+        }
+
+        // 4、批量查询群聊信息
+        Map<Long, RoomGroup> roomGroupMap = new HashMap<>();
+
+        // 5、批量查询私聊信息
+        Map<Long, RoomFriend> roomFriendMap = new HashMap<>();
+
+        // 分类房间ID
+        Set<Long> groupRoomIds = new HashSet<>();
+        Set<Long> privateRoomIds = new HashSet<>();
+
+        for (Room room : roomList) {
+            if (Objects.equals(room.getType(), RoomTypeEnum.GROUP.getType())) {
+                groupRoomIds.add(room.getId());
+            } else {
+                privateRoomIds.add(room.getId());
+            }
+        }
+
+        // 批量查群
+        if (!groupRoomIds.isEmpty()) {
+            List<RoomGroup> groups = roomGroupService.list(new LambdaQueryWrapper<RoomGroup>()
+                    .in(RoomGroup::getRoomId, groupRoomIds));
+            roomGroupMap = groups.stream()
+                    .collect(Collectors.toMap(RoomGroup::getRoomId, java.util.function.Function.identity()));
+        }
+
+        // 批量查私聊
+        Map<Long, UserDetail> userDetailMap = new HashMap<>();
+        if (!privateRoomIds.isEmpty()) {
+            List<RoomFriend> friends = roomFriendService.list(new LambdaQueryWrapper<RoomFriend>()
+                    .in(RoomFriend::getRoomId, privateRoomIds));
+            roomFriendMap = friends.stream()
+                    .collect(Collectors.toMap(RoomFriend::getRoomId, java.util.function.Function.identity()));
+
+            Set<Long> friendUserIds = friends.stream()
+                    .map(f -> Objects.equals(f.getUid1(), loginUserId) ? f.getUid2() : f.getUid1())
+                    .collect(Collectors.toSet());
+
+            if (!friendUserIds.isEmpty()) {
+                try {
+                    com.shutu.commons.tools.utils.Result<List<SysUserDTO>> result = userFeignClient
+                            .listByIds(new ArrayList<>(friendUserIds));
+                    if (result.getData() != null) {
+                        for (SysUserDTO dto : result.getData()) {
+                            UserDetail u = new UserDetail();
+                            u.setId(dto.getId());
+                            u.setUsername(dto.getUsername());
+                            u.setHeadUrl(dto.getHeadUrl());
+                            userDetailMap.put(dto.getId(), u);
+                        }
+                    }
+                } catch (Exception e) {
+                    // 忽略异常，保持列表加载
+                }
+            }
+        }
+
+        // 组装结果
+        List<RoomVo> roomVoList = new ArrayList<>();
+        for (UserRoomRelate relate : userRoomRelateList) {
+            Long roomId = relate.getRoomId();
+            Room room = roomMap.get(roomId);
+            if (room == null)
+                continue;
+
             RoomVo roomVo = new RoomVo();
             roomVo.setId(roomId);
-            roomVoMap.put(roomId, roomVo);
-        });
+            roomVo.setType(room.getType());
+            roomVo.setActiveTime(room.getActiveTime());
 
-        //2、查询房间信息
-        List<Room> roomList = this.listByIds(roomVoMap.keySet());
-        for (Room item : roomList) {
-            RoomVo roomVo = roomVoMap.get(item.getId());
-            if (roomVo == null) continue; // 健壮性检查
-
-            Long lastMsgId = item.getLastMsgId();
-            //3、查询数据信息
-            Message message = (lastMsgId != null) ? messageService.getById(lastMsgId) : null;
-            if (message != null) {
-                // 设置会话中的最新消息
-                roomVo.setContent(message.getContent());
+            // 消息内容
+            Message msg = messageMap.get(room.getLastMsgId());
+            if (msg != null) {
+                roomVo.setContent(msg.getContent());
             } else {
-                roomVo.setContent("暂无消息"); // 默认值
+                roomVo.setContent("暂无消息");
             }
-            // 设置会话最后更新时间
-            roomVo.setActiveTime(item.getActiveTime());
-            roomVo.setType(item.getType());
 
-        // 计算未读消息数量
-        // 找到用户最后一次读的消息
-        UserRoomRelate userRoomRelate = userRoomRelateList.stream()
-                .filter(relate -> relate.getRoomId().equals(item.getId()))
-                .findFirst()
-                .orElse(null);
-
-        if (userRoomRelate != null && userRoomRelate.getLatestReadMsgId() != null) {
-            // 统计自上次已读消息后的消息数量
-            Long readMsgId = userRoomRelate.getLatestReadMsgId();
-            long unreadCount = messageService.count(new LambdaQueryWrapper<Message>()
-                    .eq(Message::getRoomId, item.getId())
-                    .gt(Message::getId, readMsgId));
-            roomVo.setUnreadNum((int) unreadCount);
-        } else {
-            // 若无已读位置或为首次阅读，所有消息均为未读状态
-            long totalMessages = messageService.count(new LambdaQueryWrapper<Message>()
-                    .eq(Message::getRoomId, item.getId()));
-            roomVo.setUnreadNum((int) totalMessages);
-        }
-
-            //判断房间类型
-            if (Objects.equals(item.getType(), RoomTypeEnum.GROUP.getType())) {
-                // 群聊
-                RoomGroup roomGroup = roomGroupService.getOne(new LambdaQueryWrapper<RoomGroup>().eq(RoomGroup::getRoomId, item.getId()));
-
-                // 查询群成员总数
-                long count = userRoomRelateService.count(new LambdaQueryWrapper<UserRoomRelate>().eq(UserRoomRelate::getRoomId, item.getId()));
-                roomVo.setMemberCount((int) count);
-
-                if(roomGroup != null) {
-                    roomVo.setAvatar(roomGroup.getAvatar());
-                    roomVo.setRoomName(roomGroup.getName());
-                    roomVo.setUserId(roomGroup.getOwnerId()); // 群聊时 userId 代表群主ID
-                }
+            // 未读数
+            if (relate.getLatestReadMsgId() != null) {
+                long count = messageService.count(new LambdaQueryWrapper<Message>()
+                        .eq(Message::getRoomId, roomId)
+                        .gt(Message::getId, relate.getLatestReadMsgId()));
+                roomVo.setUnreadNum((int) count);
             } else {
-                //4、查询私聊房间信息
-                RoomFriend roomFriend = roomFriendService.getOne(new LambdaQueryWrapper<RoomFriend>().eq(RoomFriend::getRoomId, item.getId()));
-                if(roomFriend != null) {
-                    Long userId = Objects.equals(roomFriend.getUid1(), loginUserId) ? roomFriend.getUid2() : roomFriend.getUid1();
-                    //5、查询好友信息
-                    Result<UserDetail> userDetailResult = userFeignClient.getById(userId);
-                    UserDetail user = userDetailResult.getData();
+                long count = messageService.count(new LambdaQueryWrapper<Message>()
+                        .eq(Message::getRoomId, roomId));
+                roomVo.setUnreadNum((int) count);
+            }
+
+            // 填充详情
+            if (Objects.equals(room.getType(), RoomTypeEnum.GROUP.getType())) {
+                RoomGroup group = roomGroupMap.get(roomId);
+                if (group != null) {
+                    roomVo.setAvatar(group.getAvatar());
+                    roomVo.setRoomName(group.getName());
+                    roomVo.setUserId(group.getOwnerId());
+                }
+                // 成员数
+                long count = userRoomRelateService
+                        .count(new LambdaQueryWrapper<UserRoomRelate>().eq(UserRoomRelate::getRoomId, roomId));
+                roomVo.setMemberCount((int) count);
+            } else {
+                RoomFriend friend = roomFriendMap.get(roomId);
+                if (friend != null) {
+                    Long friendId = Objects.equals(friend.getUid1(), loginUserId) ? friend.getUid2() : friend.getUid1();
+                    UserDetail user = userDetailMap.get(friendId);
                     if (user != null) {
                         roomVo.setAvatar(user.getHeadUrl());
                         roomVo.setRoomName(user.getUsername());
                     }
-                    roomVo.setUserId(userId); // 私聊时 userId 代表对方ID
+                    roomVo.setUserId(friendId);
                 }
             }
+            roomVoList.add(roomVo);
         }
 
-        Page<RoomVo> roomVoPage = new Page<>(current, size, page.getTotal());
-        // 按照 userRoomRelateList 的顺序（即最后更新时间）重新排序
-        List<RoomVo> orderedRoomVoList = userRoomRelateList.stream()
-                .map(relate -> roomVoMap.get(relate.getRoomId()))
-                .filter(Objects::nonNull) // 过滤掉可能查询失败的房间
-                .collect(Collectors.toList());
-        roomVoPage.setRecords(orderedRoomVoList);
-        return roomVoPage;
+        Page<RoomVo> resultPage = new Page<>(current, size, page.getTotal());
+        resultPage.setRecords(roomVoList);
+        return resultPage;
     }
 
     @Override
@@ -173,14 +229,14 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
         Long loginUserId = SecurityUser.getUserId();
         // 查询当前登录用户的所有好友关系
         List<UserFriendRelate> userFriendRelates = userFriendRelateService.list(
-                new LambdaQueryWrapper<UserFriendRelate>().eq(UserFriendRelate::getUserId, loginUserId)
-        );
+                new LambdaQueryWrapper<UserFriendRelate>().eq(UserFriendRelate::getUserId, loginUserId));
 
         List<FriendContentVo> friendContentVos = new ArrayList<>();
         Map<Integer, List<Long>> roomTypeMap = new HashMap<>();
         // 根据关系类型分组好友关系，以便后续处理
         for (UserFriendRelate userFriendRelate : userFriendRelates) {
-            roomTypeMap.computeIfAbsent(userFriendRelate.getRelateType(), k -> new ArrayList<>()).add(userFriendRelate.getRelateId());
+            roomTypeMap.computeIfAbsent(userFriendRelate.getRelateType(), k -> new ArrayList<>())
+                    .add(userFriendRelate.getRelateId());
         }
         // 遍历分组后的关系类型，为每种关系类型调用搜索服务，将结果添加到返回列表中
         roomTypeMap.keySet().forEach(item -> {
@@ -189,7 +245,6 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
         });
         return friendContentVos;
     }
-
 
     /**
      * 用于 strategies 内部调用
@@ -238,9 +293,9 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
                     new LambdaQueryWrapper<UserFriendRelate>()
                             .eq(UserFriendRelate::getUserId, loginUserId)
                             .eq(UserFriendRelate::getRelateId, user.getId())
-                            .eq(UserFriendRelate::getRelateType, RoomTypeEnum.PRIVATE.getType())
-            );
-            vo.setFriendTarget(friendRelate != null ? FriendTargetTypeEnum.JOIN.getType() : FriendTargetTypeEnum.UN_JOIN.getType());
+                            .eq(UserFriendRelate::getRelateType, RoomTypeEnum.PRIVATE.getType()));
+            vo.setFriendTarget(friendRelate != null ? FriendTargetTypeEnum.JOIN.getType()
+                    : FriendTargetTypeEnum.UN_JOIN.getType());
 
             return vo;
         }
@@ -255,8 +310,7 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
             }
 
             RoomGroup group = roomGroupService.getOne(
-                    new LambdaQueryWrapper<RoomGroup>().eq(RoomGroup::getRoomId, roomId)
-            );
+                    new LambdaQueryWrapper<RoomGroup>().eq(RoomGroup::getRoomId, roomId));
 
             if (group != null) {
                 AddFriendVo vo = new AddFriendVo();
@@ -269,9 +323,9 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
                 UserRoomRelate relate = userRoomRelateService.getOne(
                         new LambdaQueryWrapper<UserRoomRelate>()
                                 .eq(UserRoomRelate::getUserId, loginUserId)
-                                .eq(UserRoomRelate::getRoomId, group.getRoomId())
-                );
-                vo.setFriendTarget(relate != null ? FriendTargetTypeEnum.JOIN.getType() : FriendTargetTypeEnum.UN_JOIN.getType());
+                                .eq(UserRoomRelate::getRoomId, group.getRoomId()));
+                vo.setFriendTarget(
+                        relate != null ? FriendTargetTypeEnum.JOIN.getType() : FriendTargetTypeEnum.UN_JOIN.getType());
 
                 return vo;
             }
@@ -280,7 +334,6 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
         // 3. 都没找到
         return null;
     }
-
 
     /**
      * 创建群聊
@@ -369,7 +422,6 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
         return newRoomVo;
     }
 
-
     /**
      * 获取群聊详情
      */
@@ -401,7 +453,6 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
         vo.setMemberCount((int) memberCount);
         return vo;
     }
-
 
     /**
      * 获取群成员列表
@@ -452,7 +503,6 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
             return memberVo;
         }).collect(Collectors.toList());
     }
-
 
     /**
      * 更新群信息 (带权限校验)
@@ -565,8 +615,10 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
 
         // 5. 填充名称和头像
         if (Objects.equals(room.getType(), RoomTypeEnum.GROUP.getType())) {
-            RoomGroup roomGroup = roomGroupService.getOne(new LambdaQueryWrapper<RoomGroup>().eq(RoomGroup::getRoomId, roomId));
-            long count = userRoomRelateService.count(new LambdaQueryWrapper<UserRoomRelate>().eq(UserRoomRelate::getRoomId, roomId));
+            RoomGroup roomGroup = roomGroupService
+                    .getOne(new LambdaQueryWrapper<RoomGroup>().eq(RoomGroup::getRoomId, roomId));
+            long count = userRoomRelateService
+                    .count(new LambdaQueryWrapper<UserRoomRelate>().eq(UserRoomRelate::getRoomId, roomId));
             roomVo.setMemberCount((int) count);
             if (roomGroup != null) {
                 roomVo.setAvatar(roomGroup.getAvatar());
@@ -574,10 +626,13 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
                 roomVo.setUserId(roomGroup.getOwnerId());
             }
         } else {
-            RoomFriend roomFriend = roomFriendService.getOne(new LambdaQueryWrapper<RoomFriend>().eq(RoomFriend::getRoomId, roomId));
+            RoomFriend roomFriend = roomFriendService
+                    .getOne(new LambdaQueryWrapper<RoomFriend>().eq(RoomFriend::getRoomId, roomId));
             if (roomFriend != null) {
-                Long friendId = Objects.equals(roomFriend.getUid1(), userId) ? roomFriend.getUid2() : roomFriend.getUid1();
-                com.shutu.commons.tools.utils.Result<com.shutu.commons.security.user.UserDetail> res = userFeignClient.getById(friendId);
+                Long friendId = Objects.equals(roomFriend.getUid1(), userId) ? roomFriend.getUid2()
+                        : roomFriend.getUid1();
+                com.shutu.commons.tools.utils.Result<com.shutu.commons.security.user.UserDetail> res = userFeignClient
+                        .getById(friendId);
                 if (res.getData() != null) {
                     roomVo.setAvatar(res.getData().getHeadUrl());
                     roomVo.setRoomName(res.getData().getUsername());
@@ -589,7 +644,3 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
         return roomVo;
     }
 }
-
-
-
-

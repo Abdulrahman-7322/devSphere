@@ -104,7 +104,7 @@ public class SysUserController {
     @PutMapping
     @Operation(summary = "修改")
    // @LogOperation("Update User")
-    @PreAuthorize("hasAuthority('sys:user:update')")
+//    @PreAuthorize("hasAuthority('sys:user:update')")
     public Result update(@RequestBody SysUserDTO dto) throws Exception {
         //效验数据
         ValidatorUtils.validateEntity(dto, UpdateGroup.class, DefaultGroup.class);

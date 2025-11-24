@@ -39,11 +39,9 @@ public class SysUserDTO implements Serializable {
 
     @Schema(description = "密码")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    @NotBlank(message = "{sysuser.password.require}", groups = AddGroup.class)
     private String password;
 
     @Schema(description = "姓名", required = false)
-    @NotBlank(message = "{sysuser.realname.require}", groups = DefaultGroup.class)
     private String realName;
 
     @Schema(description = "头像")
@@ -54,16 +52,13 @@ public class SysUserDTO implements Serializable {
     private Integer gender;
 
     @Schema(description = "邮箱", required = false)
-    @NotBlank(message = "{sysuser.email.require}", groups = DefaultGroup.class)
     @Email(message = "{sysuser.email.error}", groups = DefaultGroup.class)
     private String email;
 
     @Schema(description = "手机号", required = false)
-    @NotBlank(message = "{sysuser.mobile.require}", groups = DefaultGroup.class)
     private String mobile;
 
     @Schema(description = "部门ID", required = false)
-    @NotNull(message = "{sysuser.deptId.require}", groups = DefaultGroup.class)
     private Long deptId;
 
     @Schema(description = "超级管理员   0：否   1：是")

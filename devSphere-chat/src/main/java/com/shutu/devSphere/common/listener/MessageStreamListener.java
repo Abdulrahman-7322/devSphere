@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
 
 /**
  * 消息日志消费者
@@ -59,7 +60,10 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
     @Override
     public void onMessage(MapRecord<String, String, String> record) {
         Map<String, String> value = record.getValue();
-        String serverMsgId = value.get("server_msg_id ");
+        // [修复] 去除键名中的空格
+        String serverMsgIdStr = value.get("server_msg_id");
+        Long serverMsgId = serverMsgIdStr != null ? Long.valueOf(serverMsgIdStr) : null;
+
         String tempId = value.get("tempId");
         Long fromUserId = Long.valueOf(value.get("fromUserId"));
         String content = value.get("content");
@@ -67,23 +71,24 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
         Long targetId = Long.valueOf(value.get("targetId"));
 
         // 1 保证幂等性
-        Message existed = messageService.getOne(new LambdaQueryWrapper<Message>()
-                .eq(Message::getServerMsgId, serverMsgId)
-                .last("limit 1"));
-        if (existed != null) {
-            log.warn("消息已处理过，执行幂等返回 tempId={}, messageId={}", tempId, existed.getId());
+        if (serverMsgId != null) {
+            Message existed = messageService.getOne(new LambdaQueryWrapper<Message>()
+                    .eq(Message::getServerMsgId, serverMsgId)
+                    .last("limit 1"));
+            if (existed != null) {
+                log.warn("消息已处理过，执行幂等返回 tempId={}, messageId={}", tempId, existed.getId());
 
-            // 已处理的消息仍然需要推送给当前用户，避免前端卡住
-            pushMessage(existed, tempId, type);
+                // 已处理的消息仍然需要推送给当前用户，避免前端卡住
+                pushMessage(existed, tempId, type);
 
-            // ACK 掉 Stream 的消息，避免重复消费
-            redisTemplate.opsForStream().acknowledge(
-                    RedisStreamConfig.IM_STREAM_KEY,
-                    RedisStreamConfig.IM_GROUP,
-                    record.getId()
-            );
+                // ACK 掉 Stream 的消息，避免重复消费
+                redisTemplate.opsForStream().acknowledge(
+                        RedisStreamConfig.IM_STREAM_KEY,
+                        RedisStreamConfig.IM_GROUP,
+                        record.getId());
 
-            return; // 幂等生效：不重复入库
+                return; // 幂等生效：不重复入库
+            }
         }
 
         log.info("Stream 收到消息: tempId={}, content={}", tempId, content);
@@ -94,7 +99,8 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
             if (roomId == null) {
                 log.error("未找到房间ID，消息可能非法: tempId={}", tempId);
                 // 这种业务错误通常无法通过重试解决，这里直接 ACK 结束
-                redisTemplate.opsForStream().acknowledge(RedisStreamConfig.IM_STREAM_KEY, RedisStreamConfig.IM_GROUP, record.getId());
+                redisTemplate.opsForStream().acknowledge(RedisStreamConfig.IM_STREAM_KEY, RedisStreamConfig.IM_GROUP,
+                        record.getId());
                 return;
             }
 
@@ -107,6 +113,14 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
                 message.setContent(content);
                 message.setType(MessageTypeEnum.TEXT.getType());
                 message.setStatus(MessageStatusEnum.NORMAL.getStatus());
+                if (serverMsgId != null) {
+                    message.setServerMsgId(serverMsgId);
+                }
+                // [修复] 手动设置时间，确保 room.setActiveTime 能获取到值
+                Date now = new Date();
+                message.setCreateTime(now);
+                message.setUpdateTime(now);
+
                 messageService.save(message);
 
                 // 2.2 更新发送者已读
@@ -130,13 +144,15 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
                 return message;
             });
 
-            if (savedMessage == null) return;
+            if (savedMessage == null)
+                return;
 
             // 3. 消息推送
             pushMessage(savedMessage, tempId, type);
 
             // 4. 手动 ACK：业务处理成功，确认消息，将消息从redisStream中弹出
-            redisTemplate.opsForStream().acknowledge(RedisStreamConfig.IM_STREAM_KEY, RedisStreamConfig.IM_GROUP, record.getId());
+            redisTemplate.opsForStream().acknowledge(RedisStreamConfig.IM_STREAM_KEY, RedisStreamConfig.IM_GROUP,
+                    record.getId());
 
         } catch (Exception e) {
             log.error("消息消费处理异常: tempId={}", tempId, e);
@@ -155,8 +171,7 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
                     RedisStreamConfig.IM_STREAM_KEY,
                     Consumer.from(RedisStreamConfig.IM_GROUP, RedisStreamConfig.IM_CONSUMER),
                     Range.just(record.getId().getValue()),
-                    1L
-            );
+                    1L);
 
             if (pendingMessages.isEmpty()) {
                 return;
@@ -172,7 +187,8 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
                 redisTemplate.opsForStream().add(DLQ_STREAM_KEY, record.getValue());
 
                 // 2. ACK 原队列消息 (将其移出 PEL，避免死循环)
-                redisTemplate.opsForStream().acknowledge(RedisStreamConfig.IM_STREAM_KEY, RedisStreamConfig.IM_GROUP, record.getId());
+                redisTemplate.opsForStream().acknowledge(RedisStreamConfig.IM_STREAM_KEY, RedisStreamConfig.IM_GROUP,
+                        record.getId());
             } else {
                 log.info("消息处理失败，等待重试 (当前次数: {})", deliveryCount);
             }

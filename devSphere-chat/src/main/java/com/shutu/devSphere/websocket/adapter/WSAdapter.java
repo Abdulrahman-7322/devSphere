@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
-
 /**
  * ws适配器
  * 将后端接收到的私聊 / 群聊消息封装成统一的响应对象 WSBaseResp<ChatMessageResp> 发送给前端。
@@ -32,13 +31,13 @@ public class WSAdapter {
     @Resource
     private UserFeignClient userFeignClient;
 
-
     public TokenStoreCache getTokenStoreCache() {
         return SpringUtil.getBean(TokenStoreCache.class);
     }
 
     /**
      * 构建私聊消息响应对象
+     * 
      * @param privateMessageDTO
      * @return
      */
@@ -69,6 +68,7 @@ public class WSAdapter {
 
     /**
      * 构建群聊消息响应对象
+     * 
      * @param groupMessageDTO
      * @return
      */
@@ -92,6 +92,7 @@ public class WSAdapter {
 
     /**
      * 构建消息内容及用户信息结构体 (基础方法)
+     * 
      * @param message 消息实体
      * @return ChatMessageResp
      */
@@ -104,7 +105,7 @@ public class WSAdapter {
         UserDetail user = result.getData();
         // 创建UserInfo对象
         ChatMessageResp.UserInfo userInfo = new ChatMessageResp.UserInfo();
-        if(user != null) {
+        if (user != null) {
             // 设置用户名、ID和头像
             userInfo.setUsername(user.getUsername());
             userInfo.setUid(user.getId());
@@ -121,7 +122,7 @@ public class WSAdapter {
         // 创建Message对象
         ChatMessageResp.Message messageVO = new ChatMessageResp.Message();
 
-        //设置 ID
+        // 设置 ID
         messageVO.setId(message.getId());
 
         // 设置私信内容
@@ -141,8 +142,9 @@ public class WSAdapter {
 
     /**
      * 从 Message 实体 + tempId 构建响应
+     * 
      * @param message 消息实体 (已持久化，包含真实的ID和时间)
-     * @param tempId 临时ID (用于前端ACK)
+     * @param tempId  临时ID (用于前端ACK)
      * @return ChatMessageResp
      */
     @NotNull
@@ -152,5 +154,56 @@ public class WSAdapter {
         // 设置 tempId
         resp.setTempId(tempId);
         return resp;
+    }
+
+    /**
+     * 批量构建消息响应 (优化 N+1 问题)
+     * 
+     * @param message       消息实体
+     * @param userDetailMap 用户信息映射表
+     * @return ChatMessageResp
+     */
+    public ChatMessageResp buildBatchMessageResp(Message message, java.util.Map<Long, UserDetail> userDetailMap) {
+        // 创建ChatMessageResp对象
+        ChatMessageResp chatMessageResp = new ChatMessageResp();
+
+        // 从 Map 中获取用户信息，避免 RPC 调用
+        UserDetail user = userDetailMap.get(message.getFromUid());
+
+        // 创建UserInfo对象
+        ChatMessageResp.UserInfo userInfo = new ChatMessageResp.UserInfo();
+        if (user != null) {
+            // 设置用户名、ID和头像
+            userInfo.setUsername(user.getUsername());
+            userInfo.setUid(user.getId());
+            userInfo.setAvatar(user.getHeadUrl());
+        } else {
+            // 兜底逻辑
+            userInfo.setUid(message.getFromUid());
+            userInfo.setUsername("未知用户");
+            userInfo.setAvatar("");
+        }
+
+        // 和发送者信息
+        chatMessageResp.setFromUser(userInfo);
+        // 创建Message对象
+        ChatMessageResp.Message messageVO = new ChatMessageResp.Message();
+
+        // 设置 ID
+        messageVO.setId(message.getId());
+
+        // 设置私信内容
+        messageVO.setContent(message.getContent());
+        messageVO.setSendTime(message.getCreateTime());
+        // 设置消息类型
+        messageVO.setType(message.getType());
+
+        // 设置消息对象
+        chatMessageResp.setMessage(messageVO);
+
+        // 设置房间ID
+        chatMessageResp.setRoomId(message.getRoomId());
+
+        return chatMessageResp;
     }
 }
