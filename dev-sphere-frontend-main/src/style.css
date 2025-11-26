@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-vibrant-bg text-vibrant-main min-h-screen;
+  /* 更微妙的顶部光感 */
+  background-image: radial-gradient(circle at 50% 0%, #EEF2FF, transparent 400px);
+}
+
+/* 通用卡片优化 */
+.v-card {
+    /* 核心改动：移除显式 border，改用 shadow 模拟微边框，质感更高级 */
+    @apply bg-white shadow-card rounded-xl transition-all duration-300;
+}
+
+.v-card:hover {
+    @apply shadow-card-hover -translate-y-0.5;
+}
+
+/* 标签小组件 */
+.v-tag {
+    @apply px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer;
+}
