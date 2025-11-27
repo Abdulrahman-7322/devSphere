@@ -28,6 +28,24 @@ const formatTime = (date: Date) => {
   }
 }
 
+// --- 消息格式化 ---
+const isImageUrl = (content: string) => {
+  if (!content) return false
+  return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(content) || content.startsWith('blob:')
+}
+
+const isFileUrl = (content: string) => {
+  if (!content) return false
+  return (content.startsWith('http') || content.startsWith('/')) && !isImageUrl(content)
+}
+
+const formatMessage = (content: string) => {
+  if (!content) return ''
+  if (isImageUrl(content)) return '[图片]'
+  if (isFileUrl(content)) return '[文件]'
+  return content
+}
+
 // --- 右键菜单逻辑 (新增功能) ---
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
@@ -151,7 +169,7 @@ onUnmounted(() => document.removeEventListener('click', handleGlobalClick))
                chat.unreadCount > 0 ? 'text-slate-700 dark:text-slate-200 font-medium' : 'text-slate-500 dark:text-slate-400',
                chatStore.activeRoomId === chat.id ? 'text-blue-600/80 dark:text-blue-300/80' : ''
              ]">
-               {{ chat.lastMessage }}
+               {{ formatMessage(chat.lastMessage) }}
              </p>
            </div>
         </div>

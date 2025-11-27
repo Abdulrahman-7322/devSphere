@@ -60,7 +60,7 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
     @Override
     public void onMessage(MapRecord<String, String, String> record) {
         Map<String, String> value = record.getValue();
-        // [修复] 去除键名中的空格
+        // 去除键名中的空格
         String serverMsgIdStr = value.get("server_msg_id");
         Long serverMsgId = serverMsgIdStr != null ? Long.valueOf(serverMsgIdStr) : null;
 
@@ -116,7 +116,7 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
                 if (serverMsgId != null) {
                     message.setServerMsgId(serverMsgId);
                 }
-                // [修复] 手动设置时间，确保 room.setActiveTime 能获取到值
+                // 手动设置时间，确保 room.setActiveTime 能获取到值
                 Date now = new Date();
                 message.setCreateTime(now);
                 message.setUpdateTime(now);

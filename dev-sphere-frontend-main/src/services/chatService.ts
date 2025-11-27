@@ -22,6 +22,14 @@ export interface MessageQueryReq {
 }
 
 // === 1. 房间 (会话) 相关定义 ===
+export const MessageContentType = {
+  TEXT: 1,
+  IMAGE: 3,
+  FILE: 4,
+} as const
+
+export type MessageContentType = typeof MessageContentType[keyof typeof MessageContentType]
+
 export interface RoomQueryReq {
   page: number
   limit: number

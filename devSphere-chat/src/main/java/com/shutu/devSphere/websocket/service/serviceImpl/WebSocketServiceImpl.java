@@ -42,7 +42,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RequiredArgsConstructor
 public class WebSocketServiceImpl implements WebSocketService {
 
-//    private final ApplicationEventPublisher applicationEventPublisher;
+    // private final ApplicationEventPublisher applicationEventPublisher;
     private final StringRedisTemplate redisTemplate;
     @Qualifier(ThreadPoolConfig.WS_EXECUTOR)
     private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
@@ -53,13 +53,12 @@ public class WebSocketServiceImpl implements WebSocketService {
     /**
      * 所有已连接的websocket连接列表和用户 id
      */
-    private static final ConcurrentHashMap<Channel,Long> ONLINE_WS_MAP = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Channel, Long> ONLINE_WS_MAP = new ConcurrentHashMap<>();
 
     /**
      * 所有在线的用户和对应的socket(用户可以多端登录，对应了不同的socket)
      */
     private static final ConcurrentHashMap<Long, CopyOnWriteArrayList<Channel>> ONLINE_UID_MAP = new ConcurrentHashMap<>();
-
 
     @Override
     public void connect(Channel channel) {
@@ -106,15 +105,14 @@ public class WebSocketServiceImpl implements WebSocketService {
         });
     }
 
-
     @Override
     public void sendToAllOnline(WSBaseResp<?> wsBaseResp) {
         sendToAllOnline(wsBaseResp, null);
     }
 
-
     /**
      * 给某个用户发送信息
+     * 
      * @param wsBaseResp
      * @param uid
      */
@@ -129,52 +127,55 @@ public class WebSocketServiceImpl implements WebSocketService {
         channels.forEach(channel -> threadPoolTaskExecutor.execute(() -> sendMsg(channel, wsBaseResp)));
     }
 
-//
-//    /**
-//     * 发送聊天信息
-//     * @param channel
-//     * @param req
-//     */
-//    @Override
-//    public void sendMessage(Channel channel, WSBaseReq req) {
-//        String msg = req.getData();
-//        ChatMessageVo chatMessage = JSONUtil.toBean(msg, ChatMessageVo.class);
-//        RoomTypeEnum messageTypeEnum = RoomTypeEnum.of(chatMessage.getType());
-//
-//        switch (messageTypeEnum) {
-//            case PRIVATE:
-//                // 私聊
-//                // 1 创建一个私聊事件，持久化信息到数据库
-//                PrivateMessageDTO privateMessageDTO = new PrivateMessageDTO();
-//                privateMessageDTO.setFromUserId(channel.attr(USER_ID_KEY).get());
-//                privateMessageDTO.setToUserId(req.getUserId());
-//                privateMessageDTO.setContent(chatMessage.getContent());
-//                applicationEventPublisher.publishEvent(new PrivateMessageEvent(this,privateMessageDTO));
-//                // 2 判断该用户是否在线，在线则直接推送信息
-//                if (ONLINE_UID_MAP.containsKey(req.getUserId())){
-//                    // 用户在线，向多端发送实时信息
-//                    WSBaseResp<ChatMessageResp> wsBaseResp = wsAdapter.buildPrivateMessageResp(privateMessageDTO);
-//                    CopyOnWriteArrayList<Channel> channels = ONLINE_UID_MAP.get(req.getUserId());
-//                    threadPoolTaskExecutor.execute(() -> {
-//                        for (Channel ch : channels) {
-//                            sendMsg(ch,wsBaseResp);
-//                        }
-//                    });
-//                }
-//                break;
-//            case GROUP:
-//                // 群聊
-//                // 1 创建一个群聊事件，持久化信息到数据库
-//                GroupMessageDTO groupMessageDTO = new GroupMessageDTO();
-//                groupMessageDTO.setFromUserId(channel.attr(USER_ID_KEY).get());
-//                groupMessageDTO.setToRoomId(req.getUserId());
-//                groupMessageDTO.setContent(chatMessage.getContent());
-//                applicationEventPublisher.publishEvent(new GroupMessageEvent(this,groupMessageDTO));
-//                // 2 群聊，向所有群成员发送实时信息
-//                sendGroupMessage(groupMessageDTO);
-//                break;
-//        }
-//    }
+    //
+    // /**
+    // * 发送聊天信息
+    // * @param channel
+    // * @param req
+    // */
+    // @Override
+    // public void sendMessage(Channel channel, WSBaseReq req) {
+    // String msg = req.getData();
+    // ChatMessageVo chatMessage = JSONUtil.toBean(msg, ChatMessageVo.class);
+    // RoomTypeEnum messageTypeEnum = RoomTypeEnum.of(chatMessage.getType());
+    //
+    // switch (messageTypeEnum) {
+    // case PRIVATE:
+    // // 私聊
+    // // 1 创建一个私聊事件，持久化信息到数据库
+    // PrivateMessageDTO privateMessageDTO = new PrivateMessageDTO();
+    // privateMessageDTO.setFromUserId(channel.attr(USER_ID_KEY).get());
+    // privateMessageDTO.setToUserId(req.getUserId());
+    // privateMessageDTO.setContent(chatMessage.getContent());
+    // applicationEventPublisher.publishEvent(new
+    // PrivateMessageEvent(this,privateMessageDTO));
+    // // 2 判断该用户是否在线，在线则直接推送信息
+    // if (ONLINE_UID_MAP.containsKey(req.getUserId())){
+    // // 用户在线，向多端发送实时信息
+    // WSBaseResp<ChatMessageResp> wsBaseResp =
+    // wsAdapter.buildPrivateMessageResp(privateMessageDTO);
+    // CopyOnWriteArrayList<Channel> channels = ONLINE_UID_MAP.get(req.getUserId());
+    // threadPoolTaskExecutor.execute(() -> {
+    // for (Channel ch : channels) {
+    // sendMsg(ch,wsBaseResp);
+    // }
+    // });
+    // }
+    // break;
+    // case GROUP:
+    // // 群聊
+    // // 1 创建一个群聊事件，持久化信息到数据库
+    // GroupMessageDTO groupMessageDTO = new GroupMessageDTO();
+    // groupMessageDTO.setFromUserId(channel.attr(USER_ID_KEY).get());
+    // groupMessageDTO.setToRoomId(req.getUserId());
+    // groupMessageDTO.setContent(chatMessage.getContent());
+    // applicationEventPublisher.publishEvent(new
+    // GroupMessageEvent(this,groupMessageDTO));
+    // // 2 群聊，向所有群成员发送实时信息
+    // sendGroupMessage(groupMessageDTO);
+    // break;
+    // }
+    // }
 
     @Override
     public void sendMessage(Channel channel, WSBaseReq req) {
@@ -182,17 +183,18 @@ public class WebSocketServiceImpl implements WebSocketService {
         ChatMessageVo chatMessage = JSONUtil.toBean(msg, ChatMessageVo.class);
         String tempId = chatMessage.getTempId();
 
-        if (tempId == null) return;
+        if (tempId == null)
+            return;
 
         Long fromUserId = channel.attr(USER_ID_KEY).get();
         RoomTypeEnum roomType = RoomTypeEnum.of(chatMessage.getType());
 
         // 1. 准备存入 Redis Stream 的消息体
-        String serverMsgId  = String.valueOf(IdWorker.getId()); // MyBatis-Plus 的雪花算法
+        String serverMsgId = String.valueOf(IdWorker.getId()); // MyBatis-Plus 的雪花算法
         long serverTs = System.currentTimeMillis();
         // 2. 构建 stream map
-        Map<String,String> streamMessage = new HashMap<>();
-        streamMessage.put("server_msg_id", serverMsgId );
+        Map<String, String> streamMessage = new HashMap<>();
+        streamMessage.put("server_msg_id", serverMsgId);
         streamMessage.put("tempId", tempId);
         streamMessage.put("fromUserId", String.valueOf(fromUserId));
         streamMessage.put("content", chatMessage.getContent());
@@ -210,18 +212,32 @@ public class WebSocketServiceImpl implements WebSocketService {
             // 2.写入 Redis Stream (顺序写，极快)
             RecordId recordId = redisTemplate.opsForStream().add(
                     RedisStreamConfig.IM_STREAM_KEY,
-                    streamMessage
-            );
+                    streamMessage);
             log.info("消息写入 Redis Stream 成功, StreamId: {}, TempId: {}", recordId, tempId);
 
             // 3.立即返回 ACK给发送者，这里的ACK只是告诉前端后端已经拿到数据，不需要重试发送消息
             // 注意：此时数据库还没落库，但我们已通过 Redis 保证了可靠性
-            WSMessageAck ackData = new WSMessageAck(tempId, serverMsgId ,serverTs);
+            WSMessageAck ackData = new WSMessageAck(tempId, serverMsgId, serverTs);
             sendAck(channel, ackData);
         } catch (Exception e) {
             log.error("消息写入 Redis 失败", e);
             sendError(channel, tempId, "服务器繁忙");
         }
+    }
+
+    @Override
+    public void handleRtcSignal(Channel channel, WSBaseReq req) {
+        Long targetUid = req.getUserId();
+        if (targetUid == null)
+            return;
+
+        // 构造响应体
+        WSBaseResp<String> resp = new WSBaseResp<>();
+        resp.setType(WSReqTypeEnum.RTC_SIGNAL.getType());
+        resp.setData(req.getData()); // 透传信令数据
+
+        // 发送给目标用户
+        sendToUid(resp, targetUid);
     }
 
     /**
@@ -235,21 +251,22 @@ public class WebSocketServiceImpl implements WebSocketService {
         sendMsg(channel, wsBaseResp);
     }
 
-
     /**
      * 发送群聊信息
+     * 
      * @param groupMessageDTO
      */
     private void sendGroupMessage(GroupMessageDTO groupMessageDTO) {
         WSBaseResp<ChatMessageResp> baseResp = wsAdapter.buildGroupMessageResp(groupMessageDTO);
-        //获取房间人员id数组
-        List<UserRoomRelate> list = userRoomRelateService.list(new LambdaQueryWrapper<UserRoomRelate>().eq(UserRoomRelate::getRoomId, groupMessageDTO.getToRoomId()));
-        if (list.isEmpty()){
+        // 获取房间人员id数组
+        List<UserRoomRelate> list = userRoomRelateService.list(
+                new LambdaQueryWrapper<UserRoomRelate>().eq(UserRoomRelate::getRoomId, groupMessageDTO.getToRoomId()));
+        if (list.isEmpty()) {
             return;
         }
         list.forEach(userRoomRelate -> {
             Long uid = userRoomRelate.getUserId();
-            if (uid.equals(groupMessageDTO.getFromUserId())){
+            if (uid.equals(groupMessageDTO.getFromUserId())) {
                 return;
             }
             sendToUid(baseResp, uid);
@@ -279,14 +296,12 @@ public class WebSocketServiceImpl implements WebSocketService {
         sendMsg(channel, wsBaseResp);
     }
 
-
     /**
      * 用户上线
      */
     private void online(Channel channel, Long uid) {
 
     }
-
 
     /**
      * 发送消息
@@ -297,7 +312,6 @@ public class WebSocketServiceImpl implements WebSocketService {
     private void sendMsg(Channel channel, WSBaseResp<?> wsBaseResp) {
         channel.writeAndFlush(new TextWebSocketFrame(JSONUtil.toJsonStr(wsBaseResp)));
     }
-
 
     /**
      * 用户下线

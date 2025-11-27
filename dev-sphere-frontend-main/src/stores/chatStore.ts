@@ -57,6 +57,7 @@ interface ChatMessageVo {
   type: MsgType
   content: string
   tempId?: string
+  messageType?: number // Add messageType
 }
 
 // ACK 后端返回结构（前端使用）
@@ -192,7 +193,7 @@ export const useChatStore = defineStore('chat', () => {
    * - 通过 wsService.send 发送（payload 包含 tempId）
    * - 启动 ACK 超时定时器
    */
-  function sendMessage(content: string) {
+  function sendMessage(content: string, messageType: number = 1) { // Default to TEXT (1)
     const conv = activeConversation.value
     const userInfo = userStore.userInfo
     if (!conv || !userInfo) return
@@ -223,6 +224,7 @@ export const useChatStore = defineStore('chat', () => {
       type: conv.type,
       content: content,
       tempId: tempId,
+      messageType: messageType, // Pass messageType
     }
 
     const targetId = conv.type === MsgType.PRIVATE ? conv.targetId : String(conv.id)
@@ -502,7 +504,8 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function setActiveRoom(roomId: number) {
+  async function setActiveRoom(rawRoomId: number | string) {
+    const roomId = Number(rawRoomId)
     if (activityTimer.value) {
       clearTimeout(activityTimer.value)
       activityTimer.value = null

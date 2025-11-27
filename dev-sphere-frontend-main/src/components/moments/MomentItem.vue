@@ -79,6 +79,16 @@ const previewImage = (url: string) => {
   window.open(url, '_blank')
 }
 
+// ImageViewer State
+import ImageViewer from '../ImageViewer.vue'
+const showImageViewer = ref(false)
+const currentImageIndex = ref(0)
+
+const openImageViewer = (index: number) => {
+  currentImageIndex.value = index
+  showImageViewer.value = true
+}
+
 // 用户显示名称优先级: username > "用户"+ID后4位
 const displayName = computed(() => {
   if (props.moment.user.username) return props.moment.user.username
@@ -133,7 +143,7 @@ const defaultAvatar = computed(() => {
           <img 
             :src="moment.imageUrls[0]" 
             class="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-zoom-in"
-            @click="previewImage(moment.imageUrls[0])"
+            @click="openImageViewer(0)"
           />
         </div>
         <!-- 多图模式 -->
@@ -146,11 +156,17 @@ const defaultAvatar = computed(() => {
             <img 
               :src="url" 
               class="w-full h-full object-cover hover:scale-110 transition-transform duration-500 cursor-zoom-in"
-              @click="previewImage(url)"
+              @click="openImageViewer(index)"
             />
           </div>
         </div>
       </div>
+
+      <ImageViewer 
+        v-model="showImageViewer"
+        :images="moment.imageUrls || []"
+        :initial-index="currentImageIndex"
+      />
 
       <!-- 底部操作栏 -->
       <div class="flex items-center justify-between pt-2">

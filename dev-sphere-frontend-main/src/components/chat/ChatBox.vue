@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { useChatStore, type ChatMessage, MsgType } from '../../stores/chatStore'
+import { MessageContentType } from '../../services/chatService'
 import { useUserStore } from '../../stores/userStore'
 import ChatDetailModal from './ChatDetailModal.vue'
 import GroupDetailModal from './GroupDetailModal.vue'
@@ -68,18 +69,297 @@ const handleScrollTop = async () => {
   }
 }
 
-// 发送消息
-const handleSend = (e?: KeyboardEvent) => {
-  if (e && e.shiftKey) return
-  const content = messageInput.value.trim()
-  if (!content) return
-  chatStore.sendMessage(content)
-  messageInput.value = ''
-  // 发送后立即滚动到底（auto）
+
+
+
+
+// Helper: Detect Message Type
+// Helper: Detect Message Type
+const isImageUrl = (content: string) => {
+  if (!content) return false
+  // Add support for svg and dicebear api
+  return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(content) || 
+         content.startsWith('blob:') || 
+         content.includes('api.dicebear.com')
+}
+
+const isFileUrl = (content: string) => {
+  if (!content) return false
+  // Simple check: if it looks like a URL but not an image
+  return (content.startsWith('http') || content.startsWith('/')) && !isImageUrl(content)
+}
+
+const getFileName = (url: string) => {
+  try {
+    return url.substring(url.lastIndexOf('/') + 1)
+  } catch {
+    return '未知文件'
+  }
+}
+
+// Chat Image Preview
+import ImageViewer from '../ImageViewer.vue'
+const showImageViewer = ref(false)
+const previewImages = ref<string[]>([])
+
+const previewChatImage = (url: string) => {
+  previewImages.value = [url]
+  showImageViewer.value = true
+}
+
+// ---------- 滚动/加载交互逻辑 ----------
+
+// [V8] 初始加载状态 (用于隐藏滚动过程)
+// [V8] 初始加载状态 (用于隐藏滚动过程)
+const isInitialLoad = ref(false)
+
+// Pending Attachment State
+interface PendingAttachment {
+  type: 'image' | 'file'
+  url: string
+  name?: string
+  file?: File
+}
+const pendingAttachment = ref<PendingAttachment | null>(null)
+
+// ---------- 滚动/加载交互逻辑 ----------
+
+// 1) 监听 activeRoomId
+watch(
+  () => chatStore.activeRoomId,
+  (newId) => {
+    if (!newId) return
+    
+    // 切换房间时，先隐藏内容，避免看到从上往下滚动的过程
+    isInitialLoad.value = true
+
+    // Clear pending attachment when switching rooms
+    pendingAttachment.value = null
+
+    if (chatStore.lastOpenedLoadedRoomId === newId) {
+      scrollToBottom('auto')
+      chatStore.lastOpenedLoadedRoomId = null as any
+      return
+    }
+    const stop = watch(
+      () => chatStore.lastOpenedLoadedRoomId,
+      (val) => {
+        if (val === newId) {
+          scrollToBottom('auto')
+          chatStore.lastOpenedLoadedRoomId = null as any
+          stop()
+        }
+      },
+      { immediate: true }
+    )
+  },
+  { immediate: true }
+)
+
+// 2) 监听消息长度变化
+watch(
+  () => chatStore.activeMessages.length,
+  async (newLength, oldLength) => {
+    if (newLength <= oldLength) return
+    if (isLoadingMore.value) return
+    if (chatStore.lastMessageDirection === 'append') {
+      await scrollToBottom('smooth')
+      chatStore.lastMessageDirection = null as any
+    }
+  }
+)
+// Upload Logic
+import { ossService } from '../../services/ossService'
+
+const imageInput = ref<HTMLInputElement | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+
+const triggerImageUpload = () => imageInput.value?.click()
+const triggerFileUpload = () => fileInput.value?.click()
+
+const handleImageUpload = async (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  
+  try {
+    const res = await ossService.upload(file)
+    insertHtmlAtCursor(`<img src="${res.url}" class="w-20 h-20 object-cover inline-block align-middle mx-1 rounded select-none" contenteditable="false" />`)
+  } catch (error) {
+    console.error('Image upload failed:', error)
+    alert('图片上传失败')
+  } finally {
+    if (imageInput.value) imageInput.value.value = ''
+  }
+}
+
+const handleFileUpload = async (e: Event) => {
+  // File upload still sends immediately or we could implement a file card in editor?
+  // For now, let's keep file upload as immediate send or maybe just text link?
+  // User asked for "mixed text and image", didn't specify file.
+  // Let's keep file upload as immediate send for now to avoid complexity of rendering file card in contenteditable.
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  try {
+    const res = await ossService.upload(file)
+    chatStore.sendMessage(res.url, MessageContentType.FILE)
+  } catch (error) {
+    console.error('File upload failed:', error)
+    alert('文件上传失败')
+  } finally {
+    if (fileInput.value) fileInput.value.value = ''
+  }
+}
+
+const handlePaste = async (e: ClipboardEvent) => {
+  const items = e.clipboardData?.items
+  if (!items) return
+
+  for (const item of items) {
+    if (item.type.indexOf('image') !== -1) {
+      const file = item.getAsFile()
+      if (file) {
+        e.preventDefault()
+        try {
+          const res = await ossService.upload(file)
+          insertHtmlAtCursor(`<img src="${res.url}" class="w-20 h-20 object-cover inline-block align-middle mx-1 rounded select-none" contenteditable="false" />`)
+        } catch (error) {
+          console.error('Paste upload failed:', error)
+          alert('图片粘贴上传失败')
+        }
+      }
+      return
+    }
+  }
+}
+// Call Logic
+import webRTCService from '../../services/WebRTCService'
+
+// Emoji & Sticker Logic
+const showEmojiPicker = ref(false)
+const activeEmojiTab = ref<'emoji' | 'sticker'>('emoji')
+
+const emojiList = [
+  '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃',
+  '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙',
+  '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔',
+  '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥',
+  '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮',
+  '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓',
+  '🧐', '😕', '😟', '🙁', '😮', '😯', '😲', '😳', '🥺', '😦',
+  '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞',
+  '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿',
+  '💀', '☠', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖',
+  '👍', '👎', '👌', '✌', '🤞', '🤟', '🤘', '🤙', '👈', '👉',
+  '👆', '👇', '✋', '🤚', '🖐', '🖖', '👋', '🤙', '💪', '🖕',
+  '✍', '🙏', '💍', '💄', '💋', '👄', '👅', '👂', '👃', '👣',
+  '👁', '👀', '🧠', '🦴', '🦷', '🗣', '👤', '👥', '🫂', '👶',
+  '❤', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
+  '❣', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮',
+]
+
+const stickerList = [
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Felix',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Aneka',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Bella',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Caleb',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Dylan',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Eliza',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Fiona',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=George',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Hannah',
+]
+// 发送消息 (Rich Text Handler)
+const editorRef = ref<HTMLElement | null>(null)
+
+// Helper: Insert HTML at cursor
+const insertHtmlAtCursor = (html: string) => {
+  const sel = window.getSelection()
+  if (sel && sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0)
+    // Ensure the range is within our editor
+    if (editorRef.value && editorRef.value.contains(range.commonAncestorContainer)) {
+      range.deleteContents()
+      const el = document.createElement('div')
+      el.innerHTML = html
+      const frag = document.createDocumentFragment()
+      let node: Node | null
+      let lastNode: Node | null = null
+      while ((node = el.firstChild)) {
+        lastNode = frag.appendChild(node)
+      }
+      range.insertNode(frag)
+      if (lastNode) {
+        range.setStartAfter(lastNode)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+      }
+      return
+    }
+  }
+  // Fallback: Append to end
+  if (editorRef.value) {
+    editorRef.value.innerHTML += html
+    // Move cursor to end
+    const range = document.createRange()
+    range.selectNodeContents(editorRef.value)
+    range.collapse(false)
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+  }
+}
+
+const handleSend = async (e?: KeyboardEvent) => {
+  if (e && e.shiftKey) return // Allow Shift+Enter for new line
+  if (e) e.preventDefault() // Prevent default div newline behavior on Enter
+
+  if (!editorRef.value) return
+  const nodes = editorRef.value.childNodes
+  if (nodes.length === 0) return
+
+  // Parse and send sequence
+  let currentText = ''
+  
+  const sendText = async () => {
+    if (currentText.trim()) {
+      await chatStore.sendMessage(currentText)
+      currentText = ''
+    } else {
+      currentText = '' // Clear whitespace
+    }
+  }
+
+  for (const node of Array.from(nodes)) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      currentText += node.textContent
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement
+      if (el.tagName === 'IMG') {
+        // Send accumulated text first
+        await sendText()
+        // Send Image
+        const src = (el as HTMLImageElement).getAttribute('src')
+        if (src) {
+          await chatStore.sendMessage(src, MessageContentType.IMAGE)
+        }
+      } else if (el.tagName === 'BR') {
+        currentText += '\n'
+      } else {
+        // Handle other elements (like divs from copy-paste) as text
+        currentText += el.textContent
+      }
+    }
+  }
+  // Send remaining text
+  await sendText()
+
+  // Clear editor
+  editorRef.value.innerHTML = ''
   scrollToBottom('auto')
 }
 
-// 菜单按钮
 const handleMenuClick = () => {
   if (!chatStore.activeConversation) return
   if (chatStore.activeConversation.type === MsgType.GROUP) {
@@ -138,195 +418,55 @@ const messageKey = (msg: ChatMessage, index: number) => {
   return `idx_${index}`
 }
 
-// ---------- 滚动/加载交互逻辑 ----------
+// Emoji & Sticker Logic
 
-// [V8] 初始加载状态 (用于隐藏滚动过程)
-const isInitialLoad = ref(false)
 
-// ---------- 滚动/加载交互逻辑 ----------
+const toggleEmojiPicker = () => {
+  showEmojiPicker.value = !showEmojiPicker.value
+}
 
-// 1) 监听 activeRoomId
-watch(
-  () => chatStore.activeRoomId,
-  (newId) => {
-    if (!newId) return
-    
-    // 切换房间时，先隐藏内容，避免看到从上往下滚动的过程
-    isInitialLoad.value = true
+const insertEmoji = (emoji: string) => {
+  insertHtmlAtCursor(emoji)
+}
 
-    if (chatStore.lastOpenedLoadedRoomId === newId) {
-      scrollToBottom('auto')
-      chatStore.lastOpenedLoadedRoomId = null as any
-      return
-    }
-    const stop = watch(
-      () => chatStore.lastOpenedLoadedRoomId,
-      (val) => {
-        if (val === newId) {
-          scrollToBottom('auto')
-          chatStore.lastOpenedLoadedRoomId = null as any
-          stop()
-        }
-      },
-      { immediate: true }
-    )
-  },
-  { immediate: true }
-)
+const sendSticker = (url: string) => {
+  insertHtmlAtCursor(`<img src="${url}" class="w-10 h-10 inline-block align-middle mx-1 select-none" contenteditable="false" />`)
+  showEmojiPicker.value = false
+}
 
-// 2) 监听消息长度变化
-watch(
-  () => chatStore.activeMessages.length,
-  async (newLength, oldLength) => {
-    if (newLength <= oldLength) return
-    if (isLoadingMore.value) return
-    if (chatStore.lastMessageDirection === 'append') {
-      await scrollToBottom('smooth')
-      chatStore.lastMessageDirection = null as any
-    }
-  }
-)
-</script>
+// Close picker when clicking outside
+const closePicker = () => {
+  showEmojiPicker.value = false
+}
 
-<template>
-  <div class="flex flex-col h-full bg-[#F5F7FA] dark:bg-slate-900 transition-colors duration-300 relative" @click="handleActivity">
-    
-    <!-- 1. 顶部 Header (毛玻璃效果) -->
-    <div class="h-[72px] px-6 flex items-center justify-between border-b border-slate-200/50 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-20 sticky top-0 transition-all">
-      <div class="flex items-center gap-4">
-        <div class="flex flex-col">
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-lg text-slate-900 dark:text-white tracking-tight">{{ chatStore.activeConversation?.name }}</span>
-            <span
-              v-if="chatStore.activeConversation?.type === MsgType.GROUP && chatStore.activeConversation?.memberCount"
-              class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs rounded-full font-medium"
-            >
-              {{ chatStore.activeConversation.memberCount }}人
-            </span>
-          </div>
-          <!-- 在线状态 -->
-          <div v-if="chatStore.activeConversation?.isOnline" class="flex items-center gap-1.5 mt-0.5">
-             <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">在线</span>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 更多操作按钮 -->
-      <button @click="handleMenuClick" class="p-2.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all active:scale-95">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-      </button>
-    </div>
+onMounted(() => {
+  document.addEventListener('click', closePicker)
+})
 
-    <!-- 2. 消息区域 -->
-    <div
-      ref="messagesContainer"
-      @scroll="handleScrollTop"
-      class="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar transition-opacity duration-200"
-      :class="{ 'opacity-0': isInitialLoad }"
-    >
-      <!-- 加载 Loading -->
-      <div v-if="isLoadingMore" class="flex justify-center py-4">
-        <div class="w-8 h-8 border-4 border-blue-100 dark:border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
-      </div>
+onUnmounted(() => {
+  document.removeEventListener('click', closePicker)
+})
 
-      <template v-for="(msg, index) in chatStore.activeMessages" :key="messageKey(msg, index)">
-        <!-- 时间分割线 -->
-        <div v-if="shouldShowTime(msg, index)" class="flex justify-center my-6">
-          <span class="text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-200/50 dark:bg-slate-800/50 px-3 py-1 rounded-full backdrop-blur-sm">
-            {{ formatMessageTime(msg.time) }}
-          </span>
-        </div>
+const handleVoiceCall = () => {
+  const conv = chatStore.activeConversation
+  if (!conv || conv.type !== MsgType.PRIVATE) return
+  
+  // Start call
+  webRTCService.startCall(conv.targetId, {
+    id: conv.targetId,
+    name: conv.name,
+    avatar: conv.avatar
+  }, 'audio')
+}
 
-        <!-- 消息体 -->
-        <div
-          class="flex gap-4 group"
-          :class="String(msg.senderId) === String(userStore.userInfo?.id) ? 'flex-row-reverse' : ''"
-        >
-          <!-- 头像 -->
-          <img
-            :src="msg.senderAvatar"
-            class="h-10 w-10 rounded-2xl bg-white dark:bg-slate-800 border-2 border-white dark:border-slate-700 shadow-sm shrink-0 cursor-pointer hover:scale-105 transition-transform self-start mt-1"
-            :title="msg.senderName"
-          />
-
-          <div class="flex flex-col max-w-[70%]" :class="String(msg.senderId) === String(userStore.userInfo?.id) ? 'items-end' : 'items-start'">
-            <!-- 群聊显示昵称 -->
-            <div v-if="chatStore.activeConversation?.type === MsgType.GROUP && String(msg.senderId) !== String(userStore.userInfo?.id)" class="text-[11px] text-slate-400 dark:text-slate-500 mb-1 px-1 font-medium">
-              {{ msg.senderName }}
-            </div>
-
-            <div class="relative">
-              <!-- 气泡 -->
-              <div
-                class="px-5 py-3 text-[15px] leading-relaxed shadow-sm transition-all duration-200"
-                :class="[
-                  'whitespace-pre-wrap',
-                  'break-words',
-                  String(msg.senderId) === String(userStore.userInfo?.id)
-                    ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl rounded-tr-sm shadow-blue-500/20'
-                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-2xl rounded-tl-sm',
-                  msg.status === 'sending' ? 'opacity-70' : ''
-                ]"
-              >
-                {{ msg.content }}
-              </div>
-
-              <!-- 状态图标 (发送中/失败) -->
-              <div
-                class="absolute top-1/2 -translate-y-1/2 flex items-center gap-2 transition-all duration-200"
-                :class="[
-                  String(msg.senderId) === String(userStore.userInfo?.id) ? '-left-8' : '-right-8'
-                ]"
-              >
-                <div v-if="msg.status === 'sending'" class="w-4 h-4 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin"></div>
-                <svg v-else-if="msg.status === 'error'" class="h-5 w-5 text-rose-500 cursor-pointer hover:scale-110 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 17.5228 17.5228 22 12 22ZM11 15V17H13V15H11ZM11 7V13H13V7H11Z"></path></svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-    </div>
-
-    <!-- 3. 底部输入区 (悬浮式设计) -->
-    <div class="p-6 pt-2 bg-[#F5F7FA] dark:bg-slate-900 transition-colors z-20">
-      <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm focus-within:shadow-lg focus-within:border-blue-500/30 dark:focus-within:border-blue-500/30 transition-all duration-300 overflow-hidden">
-        
-        <!-- 工具栏 -->
-        <div class="flex items-center gap-1 px-3 pt-2 text-slate-400 dark:text-slate-500">
-          <button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl transition-colors hover:text-blue-500" title="表情"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg></button>
-          <button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl transition-colors hover:text-blue-500" title="发送图片"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></button>
-          <button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl transition-colors hover:text-blue-500" title="发送文件"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
-          <div class="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
-          <button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl transition-colors hover:text-blue-500" title="代码块"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
-        </div>
-
-        <!-- 输入框 -->
-        <textarea
-          v-model="messageInput"
-          @keydown.enter="handleSend"
-          placeholder="输入消息..."
-          class="w-full h-24 px-5 py-2 bg-transparent resize-none text-[15px] text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none custom-scrollbar leading-relaxed"
-        ></textarea>
-        
-        <!-- 发送按钮 -->
-        <div class="flex justify-end px-4 pb-4">
-           <button
-            @click="handleSend()"
-            :disabled="!messageInput.trim()"
-            class="px-6 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/30 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2"
-          >
-            <span>发送</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-    <!-- Modals -->
-    <GroupDetailModal />
-    <ChatDetailModal />
-  </div>
-</template>
+const handleVideoCall = () => {
+  const conv = chatStore.activeConversation
+  if (!conv || conv.type !== MsgType.PRIVATE) return
+  
+  // Start call
+  webRTCService.startCall(conv.targetId, {
+    id: conv.targetId,
+    name: conv.name,
+    avatar: conv.avatar
+  }, 'video')
+}

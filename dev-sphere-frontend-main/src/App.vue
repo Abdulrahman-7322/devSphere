@@ -7,6 +7,7 @@ import { useNotificationStore } from './stores/notificationStore' // 引入通�
 import wsService from './services/WebSocketService'
 import AppHeader from './components/AppHeader.vue'
 import AuthModal from './components/AuthModal.vue'
+import CallModal from './components/call/CallModal.vue'
 import config from './utils/config'
 
 import { authService } from './services/authService'
@@ -88,6 +89,7 @@ const openLogin = () => {
 
     
     <AuthModal ref="authModalRef" />
+    <CallModal />
   </div>
 </template>
 

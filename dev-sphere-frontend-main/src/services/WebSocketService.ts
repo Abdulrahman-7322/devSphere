@@ -7,6 +7,7 @@ export const WSReqType = {
   CHAT: 2,
   AUTHORIZE: 3,
   HEARTBEAT: 4,
+  RTC_SIGNAL: 10,
 } as const
 
 export type WSReqType = typeof WSReqType[keyof typeof WSReqType]
@@ -39,6 +40,13 @@ class WebSocketService {
   private reconnectTimeout: any = null
   public status = ref<WSStatusType>(WSStatus.CLOSED)
 
+  // Handler for RTC signals (to avoid circular dependency)
+  private rtcHandler: ((data: any) => void) | null = null
+
+  public registerRtcHandler(handler: (data: any) => void) {
+    this.rtcHandler = handler
+  }
+
   connect(url: string, token: string) {
     this.url = url
     this.token = token
@@ -48,7 +56,7 @@ class WebSocketService {
     try {
       // 使用 URL 参数传递 Token
       const wsUrl = `${url}?accessToken=${encodeURIComponent(token)}`
-      console.log('[WS] 准备连接真实地址:', wsUrl) 
+      console.log('[WS] 准备连接真实地址:', wsUrl)
       this.ws = new WebSocket(wsUrl)
 
       this.initListeners()
@@ -72,7 +80,7 @@ class WebSocketService {
       try {
         // 心跳响应可能只是简单字符串，需要兼容判断
         if (event.data === 'PONG') return
-        
+
         const resp: WSBaseResp = JSON.parse(event.data)
         this.handleMessage(resp)
       } catch (e) {
@@ -104,15 +112,34 @@ class WebSocketService {
       case WSReqType.HEARTBEAT:
         // console.debug('[WS] 心跳响应')
         break
+      case WSReqType.RTC_SIGNAL:
+        // Handle RTC Signal
+        let signalData = resp.data
+        if (typeof signalData === 'string') {
+          try {
+            signalData = JSON.parse(signalData)
+          } catch (e) {
+            console.error('Failed to parse RTC signal', e)
+            return
+          }
+        }
+        if (this.rtcHandler) {
+          this.rtcHandler(signalData)
+        }
+        break
     }
   }
 
- // 发送消息 (核心方法)
+  // 发送消息 (核心方法)
   send(req: WSBaseReq) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(req))
     } else {
-      console.warn('[WS] 发送失败，连接未就绪')
+      console.warn('[WS] 发送失败，连接未就绪', {
+        wsExists: !!this.ws,
+        readyState: this.ws?.readyState,
+        status: this.status.value
+      })
     }
   }
 
@@ -140,10 +167,17 @@ class WebSocketService {
     this.reconnectTimeout = setTimeout(() => {
       this.reconnectTimeout = null
       if (this.url && this.token) {
-          console.log('[WS] 尝试重连...')
-          this.connect(this.url, this.token)
+        console.log('[WS] 尝试重连...')
+        this.connect(this.url, this.token)
       }
     }, 5000)
+  }
+
+  public ensureConnected() {
+    if (this.status.value !== WSStatus.OPEN && this.url && this.token) {
+      console.log('[WS] ensureConnected triggers reconnect')
+      this.connect(this.url, this.token)
+    }
   }
 
   // 主动关闭

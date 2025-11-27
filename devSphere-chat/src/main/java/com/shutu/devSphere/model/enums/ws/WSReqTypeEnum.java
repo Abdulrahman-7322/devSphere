@@ -16,7 +16,8 @@ public enum WSReqTypeEnum {
     AUTHORIZE(3, "鉴权"),
     HEARTBEAT(4, "心跳"),
     ERROR(5, "错误通知"),
-    ACK(6, "消息确认");
+    ACK(6, "消息确认"),
+    RTC_SIGNAL(10, "RTC信令");
 
     private final Integer type;
     private final String desc;
@@ -24,7 +25,8 @@ public enum WSReqTypeEnum {
     private static final Map<Integer, WSReqTypeEnum> cache;
 
     static {
-        cache = Arrays.stream(WSReqTypeEnum.values()).collect(Collectors.toMap(WSReqTypeEnum::getType, Function.identity()));
+        cache = Arrays.stream(WSReqTypeEnum.values())
+                .collect(Collectors.toMap(WSReqTypeEnum::getType, Function.identity()));
     }
 
     public static WSReqTypeEnum of(Integer type) {

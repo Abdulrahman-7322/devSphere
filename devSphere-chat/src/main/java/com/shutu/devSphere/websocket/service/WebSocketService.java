@@ -41,8 +41,12 @@ public interface WebSocketService {
 
     void sendMessage(Channel channel, WSBaseReq req);
 
+    /**
+     * 处理 RTC 信令
+     * 
+     * @param channel
+     * @param req
+     */
+    void handleRtcSignal(Channel channel, WSBaseReq req);
 
 }
-
-
-
