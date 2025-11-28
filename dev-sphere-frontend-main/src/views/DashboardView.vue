@@ -14,7 +14,7 @@ import HeroStats from '../components/HeroStats.vue'
           <router-link to="/chat" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-vibrant-muted hover:bg-white hover:text-brand-blue hover:shadow-card transition-all">
             <span>💬</span> 即时聊天
           </router-link>
-          <router-link to="/profile" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-vibrant-muted hover:bg-white hover:text-brand-blue hover:shadow-card transition-all">
+          <router-link to="/ai-interview" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-vibrant-muted hover:bg-white hover:text-brand-blue hover:shadow-card transition-all">
             <span>⚔️</span> 我的面试
           </router-link>
           <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-vibrant-muted hover:bg-white hover:text-brand-blue hover:shadow-card transition-all">

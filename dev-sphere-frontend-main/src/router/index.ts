@@ -22,6 +22,16 @@ const router = createRouter({
       name: 'interview',
       component: () => import('../views/InterviewView.vue')
     },
+    {
+      path: '/ai-interview',
+      name: 'ai-interview',
+      component: () => import('../views/interview/InterviewLanding.vue')
+    },
+    {
+      path: '/ai-interview/session',
+      name: 'ai-interview-session',
+      component: () => import('../views/interview/AIInterviewer.vue')
+    },
     // App Main Layout Routes
     {
       path: '/',

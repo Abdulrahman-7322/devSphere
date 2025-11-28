@@ -70,6 +70,10 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
         int type = Integer.parseInt(value.get("type"));
         Long targetId = Long.valueOf(value.get("targetId"));
 
+        // 获取消息内容类型
+        String msgTypeStr = value.get("messageType");
+        int messageType = msgTypeStr != null ? Integer.parseInt(msgTypeStr) : MessageTypeEnum.TEXT.getType();
+
         // 1 保证幂等性
         if (serverMsgId != null) {
             Message existed = messageService.getOne(new LambdaQueryWrapper<Message>()
@@ -91,7 +95,7 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
             }
         }
 
-        log.info("Stream 收到消息: tempId={}, content={}", tempId, content);
+        log.info("Stream 收到消息: tempId={}, content={}, msgType={}", tempId, content, messageType);
 
         try {
             // 1. 确定房间ID
@@ -111,7 +115,7 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
                 message.setRoomId(roomId);
                 message.setFromUid(fromUserId);
                 message.setContent(content);
-                message.setType(MessageTypeEnum.TEXT.getType());
+                message.setType(messageType);
                 message.setStatus(MessageStatusEnum.NORMAL.getStatus());
                 if (serverMsgId != null) {
                     message.setServerMsgId(serverMsgId);

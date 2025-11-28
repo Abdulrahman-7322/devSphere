@@ -49,6 +49,7 @@ public class WebSocketServiceImpl implements WebSocketService {
     public static final AttributeKey<Long> USER_ID_KEY = AttributeKey.valueOf("userId");
     private final WSAdapter wsAdapter;
     private final UserRoomRelateService userRoomRelateService;
+    private final com.shutu.devSphere.service.AIInterviewService aiInterviewService;
 
     /**
      * 所有已连接的websocket连接列表和用户 id
@@ -199,6 +200,9 @@ public class WebSocketServiceImpl implements WebSocketService {
         streamMessage.put("fromUserId", String.valueOf(fromUserId));
         streamMessage.put("content", chatMessage.getContent());
         streamMessage.put("type", String.valueOf(roomType.getType()));
+        // 传递消息内容类型 (默认文本)
+        Integer msgType = chatMessage.getMessageType();
+        streamMessage.put("messageType", String.valueOf(msgType != null ? msgType : 1));
         streamMessage.put("createTime", String.valueOf(serverTs));
 
         // 根据类型放入目标ID
@@ -238,6 +242,14 @@ public class WebSocketServiceImpl implements WebSocketService {
 
         // 发送给目标用户
         sendToUid(resp, targetUid);
+    }
+
+    @Override
+    public void handleAIInterview(Channel channel, WSBaseReq req) {
+        String data = req.getData();
+        com.shutu.devSphere.model.vo.ws.request.AIInterviewReq aiReq = JSONUtil.toBean(data,
+                com.shutu.devSphere.model.vo.ws.request.AIInterviewReq.class);
+        aiInterviewService.handleMessage(channel, aiReq);
     }
 
     /**

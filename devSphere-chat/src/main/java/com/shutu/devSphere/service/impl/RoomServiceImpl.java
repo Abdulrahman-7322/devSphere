@@ -810,4 +810,64 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room>
             this.updateById(room);
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void kickFromGroup(GroupKickRequestDTO dto) {
+        Long loginUserId = SecurityUser.getUserId();
+        String username = SecurityUser.getUser().getUsername();
+        Long roomId = dto.getRoomId();
+        Long targetUid = dto.getUid();
+
+        // 1. 检查群是否存在
+        RoomGroup group = roomGroupService.getOne(new LambdaQueryWrapper<RoomGroup>()
+                .eq(RoomGroup::getRoomId, roomId));
+        if (group == null) {
+            throw new CommonException("群聊不存在", ErrorCode.GROUP_NOT_FOUND);
+        }
+
+        // 2. 权限校验：必须是群主
+        if (!group.getOwnerId().equals(loginUserId)) {
+            throw new CommonException("权限不足，只有群主才能移出成员", ErrorCode.FORBIDDEN);
+        }
+
+        // 3. 不能移出自己
+        if (targetUid.equals(loginUserId)) {
+            throw new CommonException("不能移出群主自己", ErrorCode.BAD_REQUEST);
+        }
+
+        // 4. 移出成员
+        boolean removed = userRoomRelateService.remove(new LambdaQueryWrapper<UserRoomRelate>()
+                .eq(UserRoomRelate::getRoomId, roomId)
+                .eq(UserRoomRelate::getUserId, targetUid));
+
+        if (!removed) {
+            return;
+        }
+
+        // 5. 删除好友列表中的群聊关系
+        userFriendRelateService.remove(new LambdaQueryWrapper<UserFriendRelate>()
+                .eq(UserFriendRelate::getUserId, targetUid)
+                .eq(UserFriendRelate::getRelateId, roomId)
+                .eq(UserFriendRelate::getRelateType, RoomTypeEnum.GROUP.getType()));
+
+        // 6. 发送系统消息
+        Result<UserDetail> userRes = userFeignClient.getById(targetUid);
+        String targetName = (userRes.getData() != null) ? userRes.getData().getRealName() : "成员";
+
+        Message msg = new Message();
+        msg.setRoomId(roomId);
+        msg.setFromUid(loginUserId);
+        msg.setType(MessageTypeEnum.TEXT.getType());
+        msg.setContent(username + " 将 " + targetName + " 移出了群聊");
+        messageService.save(msg);
+
+        // 更新房间活跃时间
+        Room room = this.getById(roomId);
+        if (room != null) {
+            room.setLastMsgId(msg.getId());
+            room.setActiveTime(msg.getCreateTime());
+            this.updateById(room);
+        }
+    }
 }

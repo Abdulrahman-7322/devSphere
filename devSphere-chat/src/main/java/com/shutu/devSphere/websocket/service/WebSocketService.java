@@ -49,4 +49,12 @@ public interface WebSocketService {
      */
     void handleRtcSignal(Channel channel, WSBaseReq req);
 
+    /**
+     * 处理 AI 面试信令
+     * 
+     * @param channel
+     * @param req
+     */
+    void handleAIInterview(Channel channel, WSBaseReq req);
+
 }

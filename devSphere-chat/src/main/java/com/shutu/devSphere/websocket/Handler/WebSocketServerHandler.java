@@ -92,6 +92,9 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             case RTC_SIGNAL:
                 getService().handleRtcSignal(channelHandlerContext.channel(), wsBaseRequest);
                 break;
+            case AI_INTERVIEW:
+                getService().handleAIInterview(channelHandlerContext.channel(), wsBaseRequest);
+                break;
             case HEARTBEAT:
                 break;
             default:

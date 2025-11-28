@@ -1,4 +1,5 @@
 import { useCallStore, type CallType } from '../stores/callStore'
+import { useChatStore } from '../stores/chatStore'
 import wsService, { WSReqType } from './WebSocketService'
 import { shallowRef } from 'vue'
 
@@ -38,6 +39,7 @@ class WebRTCService {
     // Initialize call (Caller)
     async startCall(targetId: string, targetUserInfo: any, type: CallType = 'audio', mode: 'p2p' | 'group' = 'p2p') {
         const callStore = useCallStore()
+        const chatStore = useChatStore()
 
         if (callStore.callState !== 'idle') {
             console.warn('[WebRTC] Call already in progress')
@@ -55,6 +57,12 @@ class WebRTCService {
 
         // Get local media first
         await this.initLocalMedia()
+
+        // Send Call Message to Chat
+        const messageType = type === 'video' ? 6 : 5
+        const content = `发起${type === 'video' ? '视频' : '语音'}通话`
+        // Note: sendCallMessage is async but we don't need to await it to block the call start
+        chatStore.sendCallMessage(targetId, content, messageType)
 
         if (mode === 'p2p') {
             // Create PC for the target

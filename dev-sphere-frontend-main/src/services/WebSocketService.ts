@@ -55,7 +55,13 @@ class WebSocketService {
 
     try {
       // 使用 URL 参数传递 Token
-      const wsUrl = `${url}?accessToken=${encodeURIComponent(token)}`
+      // 使用 URL 参数传递 Token
+      let wsUrl = url
+      if (url.startsWith('/')) {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        wsUrl = `${protocol}//${window.location.host}${url}`
+      }
+      wsUrl = `${wsUrl}?accessToken=${encodeURIComponent(token)}`
       console.log('[WS] 准备连接真实地址:', wsUrl)
       this.ws = new WebSocket(wsUrl)
 

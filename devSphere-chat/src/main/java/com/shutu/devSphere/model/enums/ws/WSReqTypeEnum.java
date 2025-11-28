@@ -17,7 +17,8 @@ public enum WSReqTypeEnum {
     HEARTBEAT(4, "心跳"),
     ERROR(5, "错误通知"),
     ACK(6, "消息确认"),
-    RTC_SIGNAL(10, "RTC信令");
+    RTC_SIGNAL(10, "RTC信令"),
+    AI_INTERVIEW(11, "AI面试");
 
     private final Integer type;
     private final String desc;

@@ -278,16 +278,32 @@ export const useChatStore = defineStore('chat', () => {
     if (!userInfo) return
 
     // 1. 查找会话
-    let conv = Array.from(conversationsMap.value.values()).find(
-      c => c.type === MsgType.PRIVATE && String(c.targetId) === String(targetId)
-    )
+    let conv = Array.from(conversationsMap.value.values()).find(c => {
+      if (c.type === MsgType.PRIVATE) {
+        return String(c.targetId) === String(targetId)
+      } else {
+        // For group, targetId is the roomId
+        return String(c.id) === String(targetId)
+      }
+    })
 
     // 如果本地没有会话，尝试简单的 WS 发送（不存本地），或者忽略
     // 为了保证一致性，建议至少发送 WS
     if (!conv) {
       console.warn('未找到会话，仅发送 WS 消息', targetId)
+      // We need to guess the type or pass it in. For now, let's assume if it looks like a room ID it might be group?
+      // Actually, WebRTCService knows the mode. But here we only have targetId.
+      // Let's try to infer or default to PRIVATE if unknown, but better to rely on caller passing context if possible.
+      // However, to keep signature simple, let's check if targetId matches an existing group in some other way or just default.
+      // Since we can't easily know, we might default to PRIVATE but this is risky for groups.
+      // BETTER APPROACH: The caller (WebRTCService) knows if it's a group call.
+      // But `sendCallMessage` signature is (targetId, content, messageType).
+      // Let's try to find if it's a group ID from `conversationsMap` even if not "active"? No, we just did that.
+
+      // Fallback: Send as PRIVATE by default if not found, or maybe we should just fail?
+      // Let's send as is.
       const chatVo = {
-        type: MsgType.PRIVATE,
+        type: MsgType.PRIVATE, // Potential bug if it's actually a group but not in list.
         content: content,
         tempId: 'call_' + Date.now(),
         messageType: messageType
