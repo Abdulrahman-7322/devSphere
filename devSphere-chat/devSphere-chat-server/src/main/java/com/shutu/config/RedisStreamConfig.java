@@ -4,6 +4,7 @@ import com.shutu.common.listener.DlqMessageListener; // [NEW] 引入 DLQ 监听�
 import com.shutu.common.listener.MessageStreamListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -26,15 +27,28 @@ public class RedisStreamConfig {
     private final DlqMessageListener dlqMessageListener;
     private final StringRedisTemplate redisTemplate;
 
+    @Value("${devsphere.server.node-id}")
+    private String serverNodeId;
+
+    @Value("${server.port:8080}")
+    private String serverPort;
+
     // 主业务定义
     public static final String IM_STREAM_KEY = "im:message:stream";
     public static final String IM_GROUP = "im-group";
-    public static final String IM_CONSUMER = "im-consumer-1";
 
     // 死信队列定义
     public static final String DLQ_STREAM_KEY = "im:message:dlq";
     public static final String DLQ_GROUP = "dlq-group";
-    public static final String DLQ_CONSUMER = "dlq-consumer-1";
+
+
+    /**
+     * 获取动态消费者名称：应用名:端口号
+     * 确保每个节点都是独立消费者
+     */
+    public String getConsumerName() {
+        return serverNodeId + ":" + serverPort;
+    }
 
     @Bean
     public Subscription subscription(RedisConnectionFactory factory) {
@@ -43,37 +57,34 @@ public class RedisStreamConfig {
         createGroup(DLQ_STREAM_KEY, DLQ_GROUP);
 
         // 2. 配置监听容器选项
-        StreamMessageListenerContainer.StreamMessageListenerContainerOptions<String, MapRecord<String, String, String>> options =
-                StreamMessageListenerContainer.StreamMessageListenerContainerOptions.builder()
-                        .pollTimeout(Duration.ofSeconds(1)) // 轮询超时
-                        .batchSize(10) // 每次拉取条数
-                        .build();
+        StreamMessageListenerContainer.StreamMessageListenerContainerOptions<String, MapRecord<String, String, String>> options = StreamMessageListenerContainer.StreamMessageListenerContainerOptions
+                .builder()
+                .pollTimeout(Duration.ofSeconds(1)) // 轮询超时
+                .batchSize(10) // 每次拉取条数
+                .build();
 
         // 3. 创建容器
-        StreamMessageListenerContainer<String, MapRecord<String, String, String>> container =
-                StreamMessageListenerContainer.create(factory, options);
+        StreamMessageListenerContainer<String, MapRecord<String, String, String>> container = StreamMessageListenerContainer
+                .create(factory, options);
 
         // 4. 注册监听器
         // 4.1 主业务监听器 (处理正常消息)
         container.receive(
-                Consumer.from(IM_GROUP, IM_CONSUMER),
+                Consumer.from(IM_GROUP, getConsumerName()),
                 StreamOffset.create(IM_STREAM_KEY, ReadOffset.lastConsumed()),
-                messageStreamListener
-        );
+                messageStreamListener);
 
         // 4.2 死信队列监听器 (处理毒消息)
         // DLQ 的逻辑比较简单（只入库），也可以复用 container
         Subscription subscription = container.receive(
-                Consumer.from(DLQ_GROUP, DLQ_CONSUMER),
+                Consumer.from(DLQ_GROUP, getConsumerName()),
                 StreamOffset.create(DLQ_STREAM_KEY, ReadOffset.lastConsumed()),
-                dlqMessageListener
-        );
+                dlqMessageListener);
 
         // 5. 启动容器
         container.start();
         return subscription;
     }
-
 
     /**
      * 安全创建消费者组

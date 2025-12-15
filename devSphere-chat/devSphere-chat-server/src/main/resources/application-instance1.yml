@@ -1,0 +1,6 @@
+server:
+  port: 8088
+devsphere:
+  server:
+    # IM服务节点ID，集群模式下每个节点必须唯一
+    node-id: ${NODE_ID:im-node-01}

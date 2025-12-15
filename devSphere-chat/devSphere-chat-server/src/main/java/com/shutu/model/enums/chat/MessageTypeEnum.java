@@ -20,7 +20,8 @@ public enum MessageTypeEnum {
     IMAGE(3, "图片"),
     VOICE(4, "语音"),
     VIDEO(5, "视频"),
-    FILE(6, "文件");
+    FILE(6, "文件"),
+    GROUP_CALL_INVITE(7, "群聊通话邀请");
 
     private final Integer type;
     private final String desc;
@@ -28,7 +29,8 @@ public enum MessageTypeEnum {
     private static final Map<Integer, MessageTypeEnum> CACHE;
 
     static {
-        CACHE = Arrays.stream(MessageTypeEnum.values()).collect(Collectors.toMap(MessageTypeEnum::getType, Function.identity()));
+        CACHE = Arrays.stream(MessageTypeEnum.values())
+                .collect(Collectors.toMap(MessageTypeEnum::getType, Function.identity()));
     }
 
     public static MessageTypeEnum of(Integer type) {

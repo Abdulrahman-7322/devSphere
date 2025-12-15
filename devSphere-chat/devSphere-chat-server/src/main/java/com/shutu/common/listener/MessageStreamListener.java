@@ -51,6 +51,7 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
     private final WSAdapter wsAdapter;
     private final TransactionTemplate transactionTemplate;
     private final StringRedisTemplate redisTemplate;
+    private final RedisStreamConfig redisStreamConfig;
 
     // 死信队列 Key
     private static final String DLQ_STREAM_KEY = "im:message:dlq";
@@ -173,7 +174,7 @@ public class MessageStreamListener implements StreamListener<String, MapRecord<S
             // 查询当前消息在 Pending List 中的详情
             PendingMessages pendingMessages = redisTemplate.opsForStream().pending(
                     RedisStreamConfig.IM_STREAM_KEY,
-                    Consumer.from(RedisStreamConfig.IM_GROUP, RedisStreamConfig.IM_CONSUMER),
+                    Consumer.from(RedisStreamConfig.IM_GROUP, redisStreamConfig.getConsumerName()),
                     Range.just(record.getId().getValue()),
                     1L);
 
