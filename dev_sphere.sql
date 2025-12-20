@@ -24,6 +24,7 @@ DROP TABLE IF EXISTS `dev_sphere_message`;
 CREATE TABLE `dev_sphere_message`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'id',
   `server_msg_id` bigint NULL DEFAULT NULL COMMENT '唯一id，客户端可见',
+  `temp_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户端临时ID，用于幂等去重',
   `room_id` bigint NOT NULL COMMENT '会话表id',
   `from_uid` bigint NOT NULL COMMENT '消息发送者uid',
   `content` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '消息内容',
@@ -62,6 +63,31 @@ CREATE TABLE `dev_sphere_message_error_log`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_temp_id`(`temp_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'IM消息死信日志表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for dev_sphere_message_archive
+-- ----------------------------
+DROP TABLE IF EXISTS `dev_sphere_message_archive`;
+CREATE TABLE `dev_sphere_message_archive`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `server_msg_id` bigint NULL DEFAULT NULL COMMENT '唯一id',
+  `temp_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户端临时ID',
+  `room_id` bigint NOT NULL COMMENT '会话表id',
+  `from_uid` bigint NOT NULL COMMENT '消息发送者uid',
+  `content` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '消息内容',
+  `reply_msg_id` bigint NULL DEFAULT NULL COMMENT '回复的消息内容',
+  `status` int NOT NULL DEFAULT 0 COMMENT '消息状态 0正常 1删除',
+  `gap_count` int NULL DEFAULT NULL COMMENT '与回复的消息间隔多少条',
+  `type` int NULL DEFAULT 1 COMMENT '消息类型',
+  `extra` json NULL COMMENT '扩展信息',
+  `create_time` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `update_time` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '修改时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `idx_server_msg_id`(`server_msg_id` ASC) USING BTREE,
+  INDEX `idx_create_time`(`create_time` ASC) USING BTREE,
+  INDEX `idx_room_id`(`room_id` ASC) USING BTREE,
+  INDEX `idx_room_id_create_time`(`room_id` ASC, `create_time` DESC) USING BTREE COMMENT '归档表核心查询索引'
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '消息归档表(冷数据)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for dev_sphere_notice_message
